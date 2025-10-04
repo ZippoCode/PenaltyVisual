@@ -1,12 +1,11 @@
 import csv
+import subprocess
 import sys
 from pathlib import Path
 from typing import List, Dict, Optional
-import subprocess
 
 
 class PenaltyAnnotator:
-    """Annotatore dettagliato per clips di rigori"""
 
     def __init__(self, video_dir: str = "dataset/raw_videos",
                  csv_file: str = "dataset/annotations.csv"):
@@ -14,18 +13,16 @@ class PenaltyAnnotator:
         self.csv_file = Path(csv_file)
         self.annotations = []
 
-        # Carica annotazioni esistenti
         self._load_existing()
 
     def _load_existing(self):
-        """Carica annotazioni già fatte"""
+
         if self.csv_file.exists():
             with open(self.csv_file, 'r') as f:
                 reader = csv.DictReader(f)
                 self.annotations = list(reader)
             print(f"✓ Caricate {len(self.annotations)} annotazioni esistenti")
         else:
-            # Crea CSV con header
             self.csv_file.parent.mkdir(parents=True, exist_ok=True)
             with open(self.csv_file, 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=[
@@ -464,7 +461,6 @@ def main():
 
     input("Premi INVIO per iniziare...")
 
-    # Avvia annotazione
     annotator = PenaltyAnnotator(
         video_dir=args.video_dir,
         csv_file=args.csv_file

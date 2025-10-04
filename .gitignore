@@ -217,4 +217,7 @@ __marimo__/
 
 
 # Data
-/data/
+data/
+
+# Checkpoint
+*.pt
