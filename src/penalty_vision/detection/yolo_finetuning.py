@@ -8,12 +8,15 @@ from ultralytics import YOLO
 from penalty_vision.utils import logger
 
 
-def train_yolo(data_yaml: str, base_model: str = "yolo11n.pt", epochs: int = 50, imgsz: int = 640, batch: int = 16,
-               project: str = "models/trained_weights", name: str = "penalty_detector", device: str = "0",
-               patience: int = 10, save_period: int = 5, **kwargs):
+def train_yolo(data_yaml: str, runs_dir: str, base_model: str = "yolo11n.pt", epochs: int = 50, imgsz: int = 640,
+               batch: int = 16, name: str = "penalty_detector", device: str = "0", patience: int = 10,
+               save_period: int = 5, **kwargs):
     data_path = Path(data_yaml)
-    if not data_path.exists(): raise FileNotFoundError(f"data.yaml not found: {data_yaml}")
-    with open(data_path, 'r') as f: data_config = yaml.safe_load(f)
+    if not data_path.exists():
+        raise FileNotFoundError(f"data.yaml not found: {data_yaml}")
+
+    with open(data_path, 'r') as f:
+        data_config = yaml.safe_load(f)
 
     logger.info("\n" + "=" * 60)
     logger.info("YOLO FINE-TUNING CONFIGURATION")
@@ -25,7 +28,7 @@ def train_yolo(data_yaml: str, base_model: str = "yolo11n.pt", epochs: int = 50,
     logger.info(f"Image size: {imgsz}")
     logger.info(f"Batch size: {batch}")
     logger.info(f"Device: {device}")
-    logger.info(f"Output: {project}/{name}")
+    logger.info(f"Output: {runs_dir}/{name}")
     logger.info("=" * 60)
 
     logger.info(f"\nLoading base model: {base_model}...")
@@ -34,11 +37,11 @@ def train_yolo(data_yaml: str, base_model: str = "yolo11n.pt", epochs: int = 50,
     logger.info("\nStarting training...")
     logger.info("This may take a while. Monitor progress in terminal.\n")
 
-    results = model.train(data=str(data_path), epochs=epochs, imgsz=imgsz, batch=batch, project=project, name=name,
-                          device=device, patience=patience, save=True, save_period=save_period, plots=True,
-                          verbose=True, **kwargs)
+    model.train(data=str(data_path), epochs=epochs, imgsz=imgsz, batch=batch, project=runs_dir, name=name,
+                device=device, patience=patience, save=True, save_period=save_period, plots=True,
+                verbose=True, **kwargs)
 
-    run_dir = Path(project) / name
+    run_dir = Path(runs_dir) / name
     best_model_path = run_dir / "weights" / "best.pt"
     last_model_path = run_dir / "weights" / "last.pt"
 
@@ -54,10 +57,10 @@ def train_yolo(data_yaml: str, base_model: str = "yolo11n.pt", epochs: int = 50,
     return best_model_path
 
 
-def full_train(data_yaml: str, device: str = "0"):
+def training(data_yaml: str, runs_dir: str, device: str = "0", num_epochs: int = 50):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return train_yolo(data_yaml=data_yaml, base_model="yolo11n.pt", epochs=100, imgsz=640, batch=16,
-                      name=f"full_train_{timestamp}", device=device, patience=15, save_period=10, hsv_h=0.015,
+    return train_yolo(data_yaml=data_yaml, runs_dir=runs_dir, base_model="yolo11n.pt", epochs=num_epochs, imgsz=640,
+                      batch=16, name=f"full_train_{timestamp}", device=device, patience=15, save_period=10, hsv_h=0.015,
                       hsv_s=0.7, hsv_v=0.4, degrees=0.0, translate=0.1, scale=0.5, flipud=0.0, fliplr=0.5, mosaic=1.0)
 
 
@@ -65,8 +68,8 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Fine-tune YOLO on soccer dataset")
+    parser.add_argument("--runs_dir", type=str, required=True, help="The directory to save results"),
     parser.add_argument("--data", type=str, required=True, help="Path to data.yaml"),
-    parser.add_argument("--mode", type=str, choices=["quick", "full", "custom"], default="quick", help="Training mode")
     parser.add_argument("--epochs", type=int, default=50, help="Number of epochs (for custom mode)")
     parser.add_argument("--batch", type=int, default=16, help="Batch size")
     parser.add_argument("--device", type=str, default="0", help="Device (0 for GPU, cpu or mps for Apple Silicon)")
@@ -88,12 +91,11 @@ if __name__ == "__main__":
             print("⚠No GPU detected, falling back to CPU")
             args.device = "cpu"
 
-    print(f"\nMode: {args.mode}")
     print(f"Dataset: {args.data}")
     print(f"Device: {args.device}")
     print("=" * 60)
 
     print("\nFull training mode (100 epochs)")
-    best_model = full_train(args.data, device=args.device)
+    best_model = training(args.data, runs_dir=args.runs_dir, device=args.device, num_epochs=args.epochs)
     print(f"\n✓ Training complete!")
     print(f"Best model saved at: {best_model}")

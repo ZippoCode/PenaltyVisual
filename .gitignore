@@ -216,8 +216,7 @@ __marimo__/
 .streamlit/secrets.toml
 
 
-# Data
+# Data and training files
 data/
-
-# Checkpoint
-*.pt
+runs/
+checkpoints/
