@@ -2,14 +2,13 @@ import argparse
 import os
 import random
 
-from penalty_vision import PlayerDetector, VideoProcessor
-from penalty_vision.detection.detection_utils import visualize_video_detection
+from penalty_vision import PlayerDetector, PlayerTracker, VideoProcessor
 from penalty_vision.utils import Config
-from penalty_vision.video.frames import resize_frame
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='Config path')
+    parser.add_argument('--output', type=str, required=True, help='Config path')
     args = parser.parse_args()
 
     config_path = args.config
@@ -21,7 +20,15 @@ if __name__ == '__main__':
     videos = [f for f in os.listdir(config.video_dir) if f.lower().endswith(extensions)]
     random_video = random.choice(videos)
     video_path = os.path.join(config.video_dir, random_video)
-    vp = VideoProcessor(str(video_path))
 
-    pd = PlayerDetector(model_name=config.checkpoint_path, weights_dir=config.weights_dir)
-    visualize_video_detection(vp, pd, max_frames=50)
+    video_name = random_video.split(".")[0]
+    os.makedirs(args.output, exist_ok=True)
+    output_path = os.path.join(args.output, f"{video_name}_detected.mp4")
+    video_processor = VideoProcessor(str(video_path))
+    player_detector = PlayerDetector(model_name=config.checkpoint_path, tracker=config.tracker_config)
+    tracker = PlayerTracker(player_detector)
+
+    with VideoProcessor(str(video_path)) as vp:
+        tracks = tracker.track_and_save(vp, output_path)
+
+    tracker.reset()

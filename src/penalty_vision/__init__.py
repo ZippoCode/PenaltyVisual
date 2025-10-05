@@ -1,4 +1,5 @@
-from penalty_vision.detection.player_detection import PlayerDetector
+from penalty_vision.modules.player_detection import PlayerDetector
 from penalty_vision.video.video_processor import VideoProcessor
+from penalty_vision.modules.player_tracking import PlayerTracker
 
-__all__ = ['PlayerDetector', 'VideoProcessor']
+__all__ = ['PlayerDetector', 'PlayerTracker', 'VideoProcessor']

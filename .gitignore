@@ -219,4 +219,5 @@ __marimo__/
 # Data and training files
 data/
 runs/
+output/
 checkpoints/
