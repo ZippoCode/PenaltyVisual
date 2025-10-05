@@ -1,17 +1,27 @@
+import argparse
+import os
+import random
+
 from penalty_vision import PlayerDetector, VideoProcessor
 from penalty_vision.detection.detection_utils import visualize_video_detection
+from penalty_vision.utils import Config
 from penalty_vision.video.frames import resize_frame
 
 if __name__ == '__main__':
-    output_dir = '/Users/zippo/PycharmProjects/PenaltyVision/PenaltyVision/data/frames'
-    vp = VideoProcessor("/Users/zippo/PycharmProjects/PenaltyVision/PenaltyVision/data/video/penalty_001.mp4")
-    frames = vp.extract_frames(0, 30)
-    resized_frames = []
-    for frame in frames:
-        resized = resize_frame(frame, target_size=(320, 240))
-        resized_frames.append(resized)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str, required=True, help='Config path')
+    args = parser.parse_args()
 
-    # save_frames(resized_frames[:5], output_dir, prefix="resized_frames")
-    # save_frames(frames[:5], output_dir, prefix="frame")
-    pd = PlayerDetector(weights_dir='/Users/zippo/PycharmProjects/PenaltyVision/PenaltyVision/checkpoints/')
+    config_path = args.config
+    config = Config(config_path)
+
+    frame_dir = config.frame_dir
+
+    extensions = (".mp4", ".mov", ".avi", ".mkv")
+    videos = [f for f in os.listdir(config.video_dir) if f.lower().endswith(extensions)]
+    random_video = random.choice(videos)
+    video_path = os.path.join(config.video_dir, random_video)
+    vp = VideoProcessor(str(video_path))
+
+    pd = PlayerDetector(model_name=config.checkpoint_path, weights_dir=config.weights_dir)
     visualize_video_detection(vp, pd, max_frames=50)

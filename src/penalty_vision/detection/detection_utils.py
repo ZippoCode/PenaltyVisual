@@ -50,7 +50,7 @@ def visualize_video_detection(video_processor, player_detector, max_frames: int 
             if frame is None:
                 break
 
-            detections = player_detector.detect_people(frame)
+            detections = player_detector.detect_kicker(frame)
             main_player = get_main_player(detections)
             vis_frame = visualize_detection(frame, main_player)
 

@@ -405,12 +405,12 @@ def main():
     )
     parser.add_argument(
         '--video-dir',
-        default=r'C:\Users\sprochilo\PycharmProjects\PenaltyVision\penalty_clips',
+        required=True,
         help='Directory con video clips'
     )
     parser.add_argument(
         '--csv-file',
-        default=r'C:\Users\sprochilo\PycharmProjects\PenaltyVision\annotations.csv',
+        required=True,
         help='File CSV output annotazioni'
     )
     parser.add_argument(

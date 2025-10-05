@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 import numpy as np
 from ultralytics import YOLO, settings
@@ -17,12 +17,13 @@ class PlayerDetector:
         logger.info(f"Weights directory: {weights_path}")
         self.model = YOLO(model_name)
         self.confidence = confidence
-        self.PERSON_CLASS_ID = 0
+        self.KICKER_CLASS_ID = 0
+        self.BALL_CLASS_ID = 1
 
         logger.info(f"Model loaded: {model_name}")
         logger.info(f"Confidence threshold: {confidence}")
 
-    def detect_people(self, frame: np.ndarray) -> List[Dict]:
+    def detect(self, frame: np.ndarray, class_id: int) -> List[Dict]:
         results = self.model(frame, verbose=False)
 
         detections = []
@@ -30,7 +31,7 @@ class PlayerDetector:
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if int(box.cls) == self.PERSON_CLASS_ID:
+                if int(box.cls) == class_id:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
                     conf_score = float(box.conf)
 
@@ -41,3 +42,8 @@ class PlayerDetector:
 
         return detections
 
+    def detect_kicker(self, frame: np.ndarray) -> List[Dict]:
+        return self.detect(frame, self.KICKER_CLASS_ID)
+
+    def detect_ball(self, frame: np.ndarray) -> List[Dict]:
+        return self.detect(frame, self.BALL_CLASS_ID)

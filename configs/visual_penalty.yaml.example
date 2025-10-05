@@ -1,0 +1,6 @@
+# Paths
+frame_dir: <Path>
+video_dir: <Path>
+yolo_path: <Path>
+checkpoint_path: <Path>
+weights_dir: <Path>
