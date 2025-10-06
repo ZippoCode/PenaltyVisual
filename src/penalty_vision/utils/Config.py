@@ -14,9 +14,7 @@ class Config:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = yaml.safe_load(f)
 
-        self.yolo_path = config.get("yolo_path")
         self.frame_dir = config.get("frame_dir")
         self.video_dir = config.get("video_dir")
         self.checkpoint_path = config.get("checkpoint_path")
-        self.weights_dir = config.get("weights_dir")
         self.tracker_config = config.get("tracker_config")
