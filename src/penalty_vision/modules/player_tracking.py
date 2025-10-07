@@ -7,6 +7,7 @@ from penalty_vision.utils import logger
 
 
 class PlayerTracker:
+
     def __init__(self, detector: PlayerDetector):
         self.detector = detector
         self.track_history = []

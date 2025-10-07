@@ -30,5 +30,3 @@ def get_main_player(
 
     else:
         raise ValueError(f"Unknown strategy: {strategy}")
-
-
