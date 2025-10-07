@@ -2,7 +2,8 @@ from typing import List, Dict
 
 import cv2
 
-from penalty_vision import PlayerDetector, VideoProcessor
+from penalty_vision.detection.player_detection import PlayerDetector
+from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.utils import logger
 
 

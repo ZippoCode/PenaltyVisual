@@ -6,7 +6,7 @@ import numpy as np
 
 
 class PoseDetection:
-    
+
     def __init__(self, model_complexity: int = 1, min_detection_confidence: float = 0.5,
                  min_tracking_confidence: float = 0.5, static_image_mode: bool = False):
         self.mp_pose = mp.solutions.pose
@@ -34,6 +34,26 @@ class PoseDetection:
                  'z': landmark.z, 'visibility': landmark.visibility})
             return {'landmarks': landmarks, 'world_landmarks': results.pose_world_landmarks}
         return None
+
+    def extract_poses_from_frames(self, frames: List[np.ndarray],
+                                  bboxes: Optional[List[Tuple[int, int, int, int]]] = None, running_frames: int = 32,
+                                  kicking_frames: int = 16) -> Dict[str, List[Dict]]:
+        total_frames = min(len(frames), running_frames + kicking_frames)
+        all_poses = []
+
+        for frame_idx in range(total_frames):
+            bbox = bboxes[frame_idx] if bboxes and frame_idx < len(bboxes) else None
+            pose_data = self.extract_pose_landmarks(frames[frame_idx], bbox)
+            all_poses.append(pose_data)
+
+        running_poses = all_poses[:running_frames]
+        kicking_poses = all_poses[running_frames:running_frames + kicking_frames]
+
+        return {
+            'running_poses': running_poses,
+            'kicking_poses': kicking_poses,
+            'all_poses': all_poses
+        }
 
     def extract_key_angles(self, pose_data: Dict) -> Dict[str, float]:
         if not pose_data or 'landmarks' not in pose_data: return {}

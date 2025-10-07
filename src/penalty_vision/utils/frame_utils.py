@@ -1,4 +1,3 @@
-from typing import Optional, Dict
 from typing import Tuple
 
 import cv2
@@ -24,23 +23,3 @@ def resize_frame(frame: np.ndarray, target_size: Tuple[int, int] = (640, 480), k
                                 cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
     return padded
-
-
-def draw_detection(frame: np.ndarray, detection: Optional[Dict], color: tuple = (0, 255, 0),
-                   thickness: int = 2) -> np.ndarray:
-    vis_frame = frame.copy()
-
-    if detection is None:
-        cv2.putText(vis_frame, "NO DETECTION", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 2)
-        return vis_frame
-
-    x1, y1, x2, y2 = detection['bbox']
-    cv2.rectangle(vis_frame, (x1, y1), (x2, y2), color, thickness)
-
-    conf_text = f"Confidence: {detection['confidence']:.2f}"
-    cv2.putText(vis_frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
-
-    area_text = f"Area: {detection['area']}"
-    cv2.putText(vis_frame, area_text, (x1, y2 + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
-
-    return vis_frame
