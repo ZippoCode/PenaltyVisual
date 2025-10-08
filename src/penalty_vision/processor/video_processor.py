@@ -64,6 +64,27 @@ class VideoProcessor:
 
         return self.extract_frames(start_frame, end_frame)
 
+    def extract_all_frames(self) -> List[np.ndarray]:
+        frames = []
+
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        total_frames = int(self.frame_count)
+
+        while True:
+            ret, frame = self.cap.read()
+            if not ret or frame is None:
+                break
+            frames.append(frame)
+
+        logger.info(f"Extracted {len(frames)} frames out from {total_frames} total")
+
+        return frames
+
+    def extract_all_frames_as_array(self) -> np.ndarray:
+        frames = self.extract_all_frames()
+        frames_array = np.array(frames)
+        return frames_array
+
     def release(self):
         if hasattr(self, "cap") and self.cap and self.cap.isOpened():
             self.cap.release()
