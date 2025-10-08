@@ -70,7 +70,8 @@ class PlayerDetector:
     @staticmethod
     def draw_kicker(frame: np.ndarray, detections: List[Dict], color: tuple = (0, 255, 0), thickness: int = 2,
                     show_conf: bool = True, show_id: bool = False) -> np.ndarray:
-        if not detections: return frame
+        if not detections:
+            return frame
         annotated_frame = frame.copy()
         for detection in detections:
             x1, y1, x2, y2 = detection['bbox']

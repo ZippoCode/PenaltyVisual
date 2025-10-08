@@ -1,5 +1,6 @@
 # Paths
-frame_dir: <Path>
-video_dir: <Path>
 checkpoint_path: <Path>
+frame_dir: <Path>
+tracker_file: <Path>
+video_dir: <Path>
 
