@@ -156,3 +156,10 @@ class PoseDetection:
 
     def release(self):
         self.pose.close()
+        
+    
+    def __del__(self):
+        try:
+            self.pose.close()
+        except Exception:
+            pass
