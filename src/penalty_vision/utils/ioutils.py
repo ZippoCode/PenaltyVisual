@@ -25,6 +25,19 @@ def save_frames(frames: List[np.ndarray], output_dir: str, prefix: str = "frame"
     return saved_paths
 
 
+def save_video(frames: np.ndarray, output_path: str, fps: float = 30.0):
+    total_frames, height, width = frames.shape[:3]
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    for frame in frames:
+        out.write(frame)
+
+    out.release()
+    logger.info(f"Video saved: {output_path}")
+
+
 def choice_random_video(video_dir: str) -> str:
     if not Path(video_dir).is_dir():
         raise NotADirectoryError(f"{video_dir} is not a directory")

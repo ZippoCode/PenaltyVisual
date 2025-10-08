@@ -1,60 +1,44 @@
 import argparse
 import os
 
-import cv2
-
 from penalty_vision.detection import PlayerDetector, PoseDetection
 from penalty_vision.modules.player_tracking import PlayerTracker
-from penalty_vision.processor.penalty_kick_processor import PenaltyKickProcessor
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.utils import Config
-from penalty_vision.utils.frame_utils import resize_frame
-from penalty_vision.utils.ioutils import choice_random_video, choice_random_image
-from penalty_vision.utils.visualize import visualize_frame
+from penalty_vision.utils.ioutils import choice_random_video, save_video
 
 
-def run_frame(frame_dir: str, checkpoint_path: str):
-    frame_path = choice_random_image(frame_dir)
-    print(frame_path)
-
-    img = cv2.imread(frame_path)
-    img = resize_frame(frame=img, target_size=(1420, 780))
-
-    player_detector = PlayerDetector(model_name=checkpoint_path)
-    player_detections = player_detector.detect_kicker(frame=img)
-    frame = player_detector.draw_kicker(img, detections=player_detections)
-
-    pose_detection = PoseDetection()
-    landmarks = pose_detection.extract_pose_landmarks(frame=img, bbox=player_detections[0]['bbox'])
-    frame = pose_detection.draw_pose(frame, landmarks)
-
-    visualize_frame(frame)
-
-
-def run_video(video_dir, output, checkpoint_path, tracker_config):
+def run_video(video_dir: str, output: str, checkpoint_path: str, tracker_config: str):
     random_video_path = choice_random_video(video_dir=video_dir)
-    video_name = random_video_path.split(".")[0]
-    os.makedirs(output, exist_ok=True)
+    video_name = os.path.basename(random_video_path).split('.')[0]
+
     output_path = os.path.join(output, f"{video_name}_detected.mp4")
     player_detector = PlayerDetector(model_name=checkpoint_path, tracker=tracker_config)
-    tracker = PlayerTracker(player_detector)
+    frames = VideoProcessor(str(random_video_path)).extract_all_frames_as_array()
 
-    with VideoProcessor(str(random_video_path)) as vp:
-        tracker.track_and_save(vp, output_path)
-    tracker.reset()
+    tracker = PlayerTracker(player_detector)
+    detections = tracker.track_frames(frames=frames)
+    tracked_frames = tracker.draw_detections_on_frames(frames, detections)
+    save_video(tracked_frames, output_path)
 
 
 def run_video_pose(video_dir: str, output: str, checkpoint_path: str, tracker_config: str):
     random_video_path = choice_random_video(video_dir=video_dir)
+    video_name = os.path.basename(random_video_path).split('.')[0]
+    frames = VideoProcessor(str(random_video_path)).extract_all_frames_as_array()
 
-    video_name = random_video_path.split(".")[0]
     player_detector = PlayerDetector(model_name=checkpoint_path, tracker=tracker_config)
     player_tracker = PlayerTracker(player_detector)
+    detections = player_tracker.track_frames(frames)
+    tracked_frames = player_tracker.draw_detections_on_frames(frames, detections)
+
     pose_detection = PoseDetection()
-    processor = PenaltyKickProcessor(player_tracker, pose_detection)
-    os.makedirs(output, exist_ok=True)
+    poses_detected = pose_detection.extract_poses_from_detections(frames, detections)
+    dp_frames = pose_detection.draw_poses_on_frames(tracked_frames, poses_detected)
+
     output_path = os.path.join(output, f"{video_name}_pose_detected.mp4")
-    processor.process_and_save(random_video_path, output_path=output_path)
+    save_video(dp_frames, output_path)
+
 
 
 if __name__ == '__main__':
@@ -64,5 +48,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     config = Config(args.config)
-    run_frame(config.frame_dir, config.checkpoint_path)
-    # run_video_pose(config.video_dir, args.output, config.checkpoint_path, config.tracker_config)
+    os.makedirs(args.output, exist_ok=True)
+
+    # run_video(config.video_dir, args.output, config.checkpoint_path, config.tracker_config)
+    run_video_pose(config.video_dir, args.output, config.checkpoint_path, config.tracker_config)
