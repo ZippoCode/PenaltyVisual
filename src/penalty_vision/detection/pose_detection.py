@@ -56,6 +56,42 @@ class PoseDetection:
 
         return poses
 
+    def normalize_poses(self, poses: Dict[int, Dict]) -> Dict[int, Dict]:
+        normalized_poses = {}
+
+        for frame_idx, pose_data in poses.items():
+            if not pose_data or 'landmarks' not in pose_data or len(pose_data['landmarks']) == 0:
+                normalized_poses[frame_idx] = pose_data
+                continue
+
+            landmarks = pose_data['landmarks']
+            left_hip = landmarks[self.PoseLandmark.LEFT_HIP]
+            right_hip = landmarks[self.PoseLandmark.RIGHT_HIP]
+
+            ref_x = (left_hip['x'] + right_hip['x']) / 2
+            ref_y = (left_hip['y'] + right_hip['y']) / 2
+
+            left_shoulder = landmarks[self.PoseLandmark.LEFT_SHOULDER]
+            right_shoulder = landmarks[self.PoseLandmark.RIGHT_SHOULDER]
+
+            scale = np.sqrt((left_shoulder['x'] - right_shoulder['x']) ** 2 +
+                            (left_shoulder['y'] - right_shoulder['y']) ** 2)
+
+            if scale == 0:
+                scale = 1.0
+
+            normalized_landmarks = []
+            for landmark in landmarks:
+                normalized_landmarks.append({
+                    'x': (landmark['x'] - ref_x) / scale,
+                    'y': (landmark['y'] - ref_y) / scale,
+                    'z': landmark['z'] / scale if 'z' in landmark else 0,
+                    'visibility': landmark.get('visibility', 1.0)
+                })
+
+            normalized_poses[frame_idx] = {'landmarks': normalized_landmarks}
+        return normalized_poses
+
     def draw_pose(self, frame: np.ndarray, pose_data: Dict) -> np.ndarray:
         if not pose_data or 'landmarks' not in pose_data:
             return frame
@@ -88,6 +124,7 @@ class PoseDetection:
             annotated_frames.append(frame)
 
         return np.array(annotated_frames)
+
     def release(self):
         self.pose.close()
 

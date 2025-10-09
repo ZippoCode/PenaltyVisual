@@ -3,6 +3,7 @@ import os
 
 from penalty_vision.detection import PlayerDetector, PoseDetection
 from penalty_vision.modules.player_tracking import PlayerTracker
+from penalty_vision.processor.context_constraint import ContextConstraint
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.utils import Config
 from penalty_vision.utils.drawing import draw_detections_on_frames
@@ -31,14 +32,28 @@ def run_video_pose(video_dir: str, output: str, checkpoint_path: str, tracker_co
     player_detector = PlayerDetector(model_name=checkpoint_path, tracker=tracker_config)
     player_tracker = PlayerTracker(player_detector)
     detections = player_tracker.track_frames(frames)
-    tracked_frames = draw_detections_on_frames(frames, detections)
 
+    # ===== BRANCH 1: Video con tracking normale =====
+    tracked_frames = draw_detections_on_frames(frames, detections)
     pose_detection = PoseDetection()
     poses_detected = pose_detection.extract_poses_from_detections(frames, detections)
     dp_frames = pose_detection.draw_poses_on_frames(tracked_frames, poses_detected)
+    pose_normalized = pose_detection.normalize_poses(poses_detected)
 
     output_path = os.path.join(output, f"{video_name}_pose_detected.mp4")
     save_video(dp_frames, output_path)
+
+    # ===== BRANCH 2: Video con context constraint =====
+    context_constraint = ContextConstraint(frames)
+    constrained_frames = context_constraint.process_tracked_sequence(detections)
+
+    constrained_output = os.path.join(output, f"{video_name}_context_constrained.mp4")
+    save_video(constrained_frames, constrained_output)
+
+    # Opzionale: Pose sul video context-constrained
+    poses_on_constrained = pose_detection.draw_poses_on_frames(constrained_frames, poses_detected)
+    constrained_pose_output = os.path.join(output, f"{video_name}_constrained_with_poses.mp4")
+    save_video(poses_on_constrained, constrained_pose_output)
 
 
 if __name__ == '__main__':
