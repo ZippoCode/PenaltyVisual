@@ -1,6 +1,5 @@
 from typing import List, Dict
 
-import cv2
 import numpy as np
 from ultralytics import YOLO
 
@@ -66,21 +65,3 @@ class PlayerDetector:
 
     def track_kicker(self, frame: np.ndarray, persist: bool = True) -> List[Dict]:
         return self.track(frame, self.KICKER_CLASS_ID, persist)
-
-    @staticmethod
-    def draw_kicker(frame: np.ndarray, detections: List[Dict], color: tuple = (0, 255, 0), thickness: int = 2,
-                    show_conf: bool = True, show_id: bool = False) -> np.ndarray:
-        if not detections:
-            return frame
-        annotated_frame = frame.copy()
-        for detection in detections:
-            x1, y1, x2, y2 = detection['bbox']
-            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, thickness)
-            label_parts = []
-            if show_conf: label_parts.append(f"{detection['confidence']:.2f}")
-            if show_id and 'track_id' in detection and detection['track_id'] != -1: label_parts.append(
-                f"ID:{detection['track_id']}")
-            if label_parts:
-                label = " ".join(label_parts)
-                cv2.putText(annotated_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-        return annotated_frame

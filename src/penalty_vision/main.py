@@ -5,6 +5,7 @@ from penalty_vision.detection import PlayerDetector, PoseDetection
 from penalty_vision.modules.player_tracking import PlayerTracker
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.utils import Config
+from penalty_vision.utils.drawing import draw_detections_on_frames
 from penalty_vision.utils.ioutils import choice_random_video, save_video
 
 
@@ -18,7 +19,7 @@ def run_video(video_dir: str, output: str, checkpoint_path: str, tracker_config:
 
     tracker = PlayerTracker(player_detector)
     detections = tracker.track_frames(frames=frames)
-    tracked_frames = tracker.draw_detections_on_frames(frames, detections)
+    tracked_frames = draw_detections_on_frames(frames, detections)
     save_video(tracked_frames, output_path)
 
 
@@ -30,7 +31,7 @@ def run_video_pose(video_dir: str, output: str, checkpoint_path: str, tracker_co
     player_detector = PlayerDetector(model_name=checkpoint_path, tracker=tracker_config)
     player_tracker = PlayerTracker(player_detector)
     detections = player_tracker.track_frames(frames)
-    tracked_frames = player_tracker.draw_detections_on_frames(frames, detections)
+    tracked_frames = draw_detections_on_frames(frames, detections)
 
     pose_detection = PoseDetection()
     poses_detected = pose_detection.extract_poses_from_detections(frames, detections)
@@ -38,7 +39,6 @@ def run_video_pose(video_dir: str, output: str, checkpoint_path: str, tracker_co
 
     output_path = os.path.join(output, f"{video_name}_pose_detected.mp4")
     save_video(dp_frames, output_path)
-
 
 
 if __name__ == '__main__':
