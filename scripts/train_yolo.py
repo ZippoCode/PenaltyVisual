@@ -1,6 +1,10 @@
-# scripts/train_yolo.py
+import argparse
+import os
 import torch
+import wandb
+
 from datetime import datetime
+from dotenv import load_dotenv
 from pathlib import Path
 from ultralytics import YOLO
 
@@ -33,10 +37,12 @@ def train_yolo(config: Config, run_name: str = None):
         **config.to_dict()['augmentation']
     }
 
-    model.train(**train_params)
-
-    run_dir = Path(config.paths.runs_dir) / run_name
-    best_model_path = run_dir / "weights" / "best.pt"
+    results = model.train(**train_params)
+    best_model_path = Path(results.save_dir) / "weights" / "best.pt"
+    
+    if not best_model_path.exists():
+        logger.warning(f"Best model not found at {best_model_path}")
+        return None
 
     logger.info(f"Training complete: {best_model_path}")
     
@@ -44,8 +50,6 @@ def train_yolo(config: Config, run_name: str = None):
 
 
 if __name__ == "__main__":
-    import argparse
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--name", type=str, default=None)
@@ -62,8 +66,28 @@ if __name__ == "__main__":
         config.training.device = "mps"
     else:
         config.training.device = "cpu"
-
-    print(f"Device: {config.training.device}")
+    
+    load_dotenv()
+    wandb_api_key = os.getenv("WANDB_API_KEY")
+    if wandb_api_key:
+        entity = os.getenv("WANDB_ENTITY", "wandb-user")
+        project = os.getenv("WANDB_PROJECT", "penaltykickvisual-yolotraining")
+        
+        try:
+            wandb.login(key=wandb_api_key)
+            wandb.init(
+                project=project,
+                entity=entity,
+                name=args.name,
+                config=config.to_dict()
+            )
+            logger.info(f"WandB configured: {entity}/{project}")
+        except Exception as e:
+            logger.warning(f"WandB login failed: {e}. Continuing without WandB")
+    else:
+        logger.info("WandB API key not found, running without WandB")
+        
+    logger.info(f"Device: {config.training.device}")
     
     best_model = train_yolo(config, run_name=args.name)
-    print(f"Model: {best_model}")
+    logger.info(f"Model: {best_model}")
