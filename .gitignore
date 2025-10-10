@@ -224,4 +224,5 @@ checkpoints/
 
 
 # Config files
+configs/training_yolo.yaml
 configs/visual_penalty.yaml

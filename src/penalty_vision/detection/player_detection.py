@@ -1,24 +1,47 @@
 from typing import List, Dict
-
+from pathlib import Path
 import numpy as np
 from ultralytics import YOLO
 
-from penalty_vision.utils import logger
+
+from penalty_vision.utils import Config, logger
 
 
 class PlayerDetector:
-    def __init__(self, model_name: str = "yolo11n.pt", tracker: str = "bytetrack.yaml", confidence: float = 0.5):
-        logger.info(f"Loading YOLO model: {model_name}...")
+    def __init__(self, config_path: str = None):
+        if config_path:
+            self.config = Config.from_yaml(config_path)
+        else:
+            self.config = Config()
+            
+        self._load_model()
+        self._load_tracker()
+        
+        self.KICKER_CLASS_ID = self.config.classes.kicker
+        self.BALL_CLASS_ID = self.config.classes.ball
 
-        self.model = YOLO(model_name)
-        self.confidence = confidence
-        self.tracker = tracker
-        self.KICKER_CLASS_ID = 0
-        self.BALL_CLASS_ID = 1
+        logger.info(f"Confidence threshold: {self.confidence}")
 
-        logger.info(f"Model loaded: {model_name}")
-        logger.info(f"Confidence threshold: {confidence}")
-
+    def _load_model(self):
+        model_path = Path(self.config.model.weights)
+        
+        if model_path.exists():
+            logger.info(f"Loading model: {model_path}")
+            self.model = YOLO(str(model_path))
+        else:
+            logger.warning(f"Model not found: {model_path}, using fallback: {self.config.model.fallback}")
+            self.model = YOLO(self.config.model.fallback)
+    
+    def _load_tracker(self):
+        tracker_path = Path(self.config.tracking.tracker)
+        
+        if tracker_path.exists():
+            logger.info(f"Using custom tracker: {tracker_path}")
+            self.tracker = str(tracker_path)
+        else:
+            logger.info(f"Using default tracker: {self.config.tracking.tracker}")
+            self.tracker = self.config.tracking.tracker
+    
     def detect(self, frame: np.ndarray, class_id: int) -> List[Dict]:
         results = self.model(frame, verbose=False)
 
