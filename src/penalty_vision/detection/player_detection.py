@@ -28,9 +28,14 @@ class PlayerDetector:
         if model_path.exists():
             logger.info(f"Loading model: {model_path}")
             self.model = YOLO(str(model_path))
+            logger.info(f"Model loaded successfully: {model_path.name}")
         else:
-            logger.warning(f"Model not found: {model_path}, using fallback: {self.config.model.fallback}")
+            logger.warning(f"Model not found: {model_path}")
+            logger.info(f"Using fallback model: {self.config.model.fallback}")
             self.model = YOLO(self.config.model.fallback)
+
+        total_params = sum(p.numel() for p in self.model.model.parameters())
+        logger.info(f"Model parameters: {total_params:,}")
     
     def _load_tracker(self):
         tracker_path = Path(self.config.tracking.tracker)

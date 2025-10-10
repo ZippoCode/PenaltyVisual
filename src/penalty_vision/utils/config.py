@@ -36,7 +36,7 @@ class TrainingConfig:
     batch: int = 16
     patience: int = 15
     save_period: int = 10
-
+    seed: int = 42
 
 @dataclass
 class AugmentationConfig:

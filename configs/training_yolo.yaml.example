@@ -11,6 +11,7 @@ training:
   batch: 16
   patience: 15
   save_period: 10
+  seed: 42
 
 augmentation:
   hsv_h: 0.015

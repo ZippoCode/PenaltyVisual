@@ -217,12 +217,15 @@ __marimo__/
 
 
 # Data and training files
+checkpoints/
 data/
+logs/
 runs/
 output/
-checkpoints/
-
+wandb/
+yolo11n.pt
+yolo11m.pt
 
 # Config files
+configs/detection.yaml
 configs/training_yolo.yaml
-configs/visual_penalty.yaml

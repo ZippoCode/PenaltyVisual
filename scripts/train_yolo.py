@@ -1,7 +1,10 @@
 import argparse
 import os
+import random
 import torch
 import wandb
+
+import numpy as np
 
 from datetime import datetime
 from dotenv import load_dotenv
@@ -10,6 +13,18 @@ from ultralytics import YOLO
 
 from penalty_vision.utils import Config, logger
 
+
+def set_seed(seed: int):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    
+    logger.info(f"Random seed set to: {seed}")
 
 def train_yolo(config: Config, run_name: str = None):
     data_path = Path(config.paths.data_yaml)
@@ -37,6 +52,7 @@ def train_yolo(config: Config, run_name: str = None):
         **config.to_dict()['augmentation']
     }
 
+    set_seed(config.training.seed)
     results = model.train(**train_params)
     best_model_path = Path(results.save_dir) / "weights" / "best.pt"
     
