@@ -2,13 +2,13 @@ from typing import List, Dict
 
 import numpy as np
 
-from penalty_vision.detection.player_detection import PlayerDetector
+from penalty_vision.detection.penalty_kick_detector import PenaltyKickDetector
 from penalty_vision.utils import logger
 
 
 class PlayerTracker:
 
-    def __init__(self, detector: PlayerDetector):
+    def __init__(self, detector: PenaltyKickDetector):
         self.detector = detector
         self.track_history = []
 

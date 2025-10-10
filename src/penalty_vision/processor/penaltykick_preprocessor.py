@@ -3,11 +3,12 @@ import os
 from pathlib import Path
 from typing import Dict
 
-from penalty_vision.detection.player_detection import PlayerDetector
+from penalty_vision.detection.penalty_kick_detector import PenaltyKickDetector
 from penalty_vision.detection.pose_detection import PoseDetection
 from penalty_vision.processor.context_constraint import ContextConstraint
 from penalty_vision.processor.video_processor import VideoProcessor
-from penalty_vision.tracking.player_tracking import PlayerTracker
+from penalty_vision.tracking.ball_tracker import BallTracker
+from penalty_vision.tracking.player_tracker import PlayerTracker
 from penalty_vision.utils import Config, logger
 from penalty_vision.utils.drawing import draw_detections_on_frames
 from penalty_vision.utils.ioutils import save_video
@@ -20,8 +21,9 @@ class PenaltyKickPreprocessor:
         self.output_dir = Path(self.config.paths.output)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.player_detector = PlayerDetector(config_path=config_path)
+        self.player_detector = PenaltyKickDetector(config_path=config_path)
         self.player_tracker = PlayerTracker(self.player_detector)
+        self.ball_tracker = BallTracker(self.player_detector)
         self.pose_detector = PoseDetection()
 
         logger.info("PenaltyKickPreprocessor initialized")
@@ -40,17 +42,18 @@ class PenaltyKickPreprocessor:
         fps = vp.fps
         vp.release()
 
-        detections = self.player_tracker.track_frames(frames)
+        player_detections = self.player_tracker.track_frames(frames)
+        ball_detections = self.ball_tracker.track_frames(frames)
 
-        tracked_frames = draw_detections_on_frames(frames, detections)
-        poses_detected = self.pose_detector.extract_poses_from_detections(frames, detections)
+        tracked_frames = draw_detections_on_frames(frames, player_detections, ball_detections)
+        poses_detected = self.pose_detector.extract_poses_from_detections(frames, player_detections)
         dp_frames = self.pose_detector.draw_poses_on_frames(tracked_frames, poses_detected)
 
         output_pose_path = video_output_dir / "pose_detected.mp4"
         save_video(dp_frames, str(output_pose_path), fps=fps)
 
         context_constraint = ContextConstraint(frames)
-        constrained_frames = context_constraint.process_tracked_sequence(detections)
+        constrained_frames = context_constraint.process_tracked_sequence(player_detections)
 
         constrained_output = video_output_dir / "context_constrained.mp4"
         save_video(constrained_frames, str(constrained_output), fps=fps)
@@ -64,6 +67,7 @@ class PenaltyKickPreprocessor:
             "video_path": str(video_path),
             "total_frames": len(frames),
             "fps": fps,
+            "ball_detections": ball_detections,
             "outputs": {
                 "pose_detected": str(output_pose_path),
                 "context_constrained": str(constrained_output),

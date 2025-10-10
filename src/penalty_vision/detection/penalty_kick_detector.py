@@ -1,19 +1,20 @@
-from typing import List, Dict
 from pathlib import Path
+from typing import List, Dict
+
 import numpy as np
 from ultralytics import YOLO
-
 
 from penalty_vision.utils import Config, logger
 
 
-class PlayerDetector:
+class PenaltyKickDetector:
+
     def __init__(self, config_path: str = None):
         if config_path:
             self.config = Config.from_yaml(config_path)
         else:
             self.config = Config()
-            
+
         self._load_model()
         self._load_tracker()
 
@@ -25,7 +26,7 @@ class PlayerDetector:
 
     def _load_model(self):
         model_path = Path(self.config.model.weights)
-        
+
         if model_path.exists():
             logger.info(f"Loading model: {model_path}")
             self.model = YOLO(str(model_path))
@@ -37,17 +38,17 @@ class PlayerDetector:
 
         total_params = sum(p.numel() for p in self.model.model.parameters())
         logger.info(f"Model parameters: {total_params:,}")
-    
+
     def _load_tracker(self):
         tracker_path = Path(self.config.tracking.tracker)
-        
+
         if tracker_path.exists():
             logger.info(f"Using custom tracker: {tracker_path}")
             self.tracker = str(tracker_path)
         else:
             logger.info(f"Using default tracker: {self.config.tracking.tracker}")
             self.tracker = self.config.tracking.tracker
-    
+
     def detect(self, frame: np.ndarray, class_id: int) -> List[Dict]:
         results = self.model(frame, verbose=False)
 
@@ -94,3 +95,6 @@ class PlayerDetector:
 
     def track_kicker(self, frame: np.ndarray, persist: bool = True) -> List[Dict]:
         return self.track(frame, self.KICKER_CLASS_ID, persist)
+
+    def track_ball(self, frame: np.ndarray, persist: bool = True) -> List[Dict]:
+        return self.track(frame, self.BALL_CLASS_ID, persist)

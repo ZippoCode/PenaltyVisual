@@ -2,7 +2,6 @@ from typing import List, Dict
 
 import cv2
 import numpy as np
-from ultralytics import YOLO
 
 
 def draw_kicker(frame: np.ndarray, detections: List[Dict], color: tuple = (0, 255, 0), thickness: int = 2,
@@ -37,16 +36,42 @@ def draw_detection(frame: np.ndarray, detections: List[Dict]) -> np.ndarray:
     return annotated_frame
 
 
-def draw_detections_on_frames(frames: np.ndarray, detections: List[Dict]) -> np.ndarray:
-    annotated_frames = []
+def draw_detections_on_frames(
+        frames: np.ndarray,
+        player_detections: List[Dict],
+        ball_detections: List[Dict] = None
+) -> np.ndarray:
+    drawn_frames = []
 
-    for frame_num, frame in enumerate(frames):
-        if frame_num < len(detections):
-            frame_detections = detections[frame_num]['detections']
-            annotated_frame = draw_detection(frame, frame_detections)
-        else:
-            annotated_frame = frame.copy()
+    for frame_idx, frame in enumerate(frames):
+        frame_copy = frame.copy()
 
-        annotated_frames.append(annotated_frame)
+        # Draw players
+        player_data = player_detections[frame_idx]
+        for detection in player_data['detections']:
+            bbox = detection['bbox']
+            x1, y1, x2, y2 = bbox
+            cv2.rectangle(frame_copy, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    return np.array(annotated_frames)
+            if 'track_id' in detection:
+                cv2.putText(frame_copy, f"ID: {detection['track_id']}",
+                            (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Draw ball
+        if ball_detections is not None:
+            ball_data = ball_detections[frame_idx]
+            for ball in ball_data['detections']:
+                bbox = ball['bbox']
+                x1, y1, x2, y2 = bbox
+                center = ((x1 + x2) // 2, (y1 + y2) // 2)
+                radius = max((x2 - x1), (y2 - y1)) // 2
+                cv2.circle(frame_copy, center, radius, (0, 0, 255), 2)
+
+                if 'track_id' in ball:
+                    cv2.putText(frame_copy, f"Ball: {ball['track_id']}",
+                                (center[0] - 20, center[1] - 15),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+        drawn_frames.append(frame_copy)
+
+    return np.array(drawn_frames)

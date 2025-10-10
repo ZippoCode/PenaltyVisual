@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from penalty_vision.detection import PlayerDetector
+from penalty_vision.detection import PenaltyKickDetector
 from penalty_vision.detection.detection_utils import get_main_player
 from penalty_vision.utils import logger
 
@@ -11,7 +11,7 @@ def visualize_frame(frame: np.ndarray, window_name: str = "Frame", wait_time: in
     return cv2.waitKey(wait_time)
 
 
-def visualize_video_detection(video_processor, player_detector: PlayerDetector, max_frames: int = 100):
+def visualize_video_detection(video_processor, player_detector: PenaltyKickDetector, max_frames: int = 100):
     logger.info(f"Processing {max_frames} frames...")
     logger.info("Press 'q' to quit, 'p' to pause")
 
