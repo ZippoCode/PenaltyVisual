@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Any
+
 import yaml
 
 
@@ -38,6 +39,7 @@ class TrainingConfig:
     save_period: int = 10
     seed: int = 42
 
+
 @dataclass
 class AugmentationConfig:
     hsv_h: float = 0.015
@@ -57,7 +59,7 @@ class PathConfig:
     runs_dir: str = "runs"
     frame_dir: str = ""
     video_dir: str = ""
-
+    output: str = "output"
 
 @dataclass
 class Config:
@@ -72,17 +74,17 @@ class Config:
     @classmethod
     def from_yaml(cls, config_path: str) -> 'Config':
         config_file = Path(config_path)
-        
+
         if not config_file.exists():
             example_file = Path(str(config_file) + ".example")
             if example_file.exists():
                 config_file = example_file
             else:
                 raise FileNotFoundError(f"Config not found: {config_path}")
-        
+
         with open(config_file, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
-        
+
         return cls(
             model=ModelConfig(**data.get('model', {})),
             detection=DetectionConfig(**data.get('detection', {})),
@@ -92,7 +94,7 @@ class Config:
             augmentation=AugmentationConfig(**data.get('augmentation', {})),
             paths=PathConfig(**data.get('paths', {}))
         )
-    
+
     def to_dict(self) -> Dict[str, Any]:
         from dataclasses import asdict
         return asdict(self)

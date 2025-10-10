@@ -16,7 +16,8 @@ class PlayerDetector:
             
         self._load_model()
         self._load_tracker()
-        
+
+        self.confidence = self.config.detection.confidence
         self.KICKER_CLASS_ID = self.config.classes.kicker
         self.BALL_CLASS_ID = self.config.classes.ball
 

@@ -1,7 +1,7 @@
 paths:
   frame_dir: "/path/to/frames"
   video_dir: "/path/to/videos"
-  output: "output"
+  output: "/path/to/output"
 
 model:
   weights: "/path/to/best/weights.pt"
