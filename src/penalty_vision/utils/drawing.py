@@ -47,18 +47,19 @@ def draw_detections_on_frames(
         frame_copy = frame.copy()
 
         # Draw players
-        player_data = player_detections[frame_idx]
-        for detection in player_data['detections']:
-            bbox = detection['bbox']
-            x1, y1, x2, y2 = bbox
-            cv2.rectangle(frame_copy, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        if player_detections is not None and len(player_detections) > 0:
+            player_data = player_detections[frame_idx]
+            for detection in player_data['detections']:
+                bbox = detection['bbox']
+                x1, y1, x2, y2 = bbox
+                cv2.rectangle(frame_copy, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-            if 'track_id' in detection:
-                cv2.putText(frame_copy, f"ID: {detection['track_id']}",
-                            (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                if 'track_id' in detection:
+                    cv2.putText(frame_copy, f"ID: {detection['track_id']}",
+                                (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # Draw ball
-        if ball_detections is not None:
+        if ball_detections is not None and len(ball_detections) > 0:
             ball_data = ball_detections[frame_idx]
             for ball in ball_data['detections']:
                 bbox = ball['bbox']

@@ -19,9 +19,6 @@ class PlayerTracker:
             detections = self.detector.track_kicker(frame, persist=True)
             all_tracks.append({'frame': frame_num, 'detections': detections})
 
-            # if frame_num % 30 == 0:
-            #     logger.info(f"Tracked {frame_num}/{total_frames} frames...")
-
         self.track_history = all_tracks
         logger.info(f"Tracking completed: {len(frames)} frames processed")
         return all_tracks
