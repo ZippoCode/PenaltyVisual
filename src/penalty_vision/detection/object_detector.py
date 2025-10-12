@@ -7,7 +7,7 @@ from ultralytics import YOLO
 from penalty_vision.utils import Config, logger
 
 
-class PenaltyKickDetector:
+class ObjectDetector:
 
     def __init__(self, config_path: str = None):
         if config_path:

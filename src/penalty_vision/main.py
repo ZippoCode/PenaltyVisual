@@ -1,7 +1,7 @@
 import argparse
 import os
 
-from penalty_vision.detection import PenaltyKickDetector
+from penalty_vision.detection import ObjectDetector
 from penalty_vision.processor.penaltykick_preprocessor import PenaltyKickPreprocessor
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.tracking.player_tracker import PlayerTracker
@@ -16,7 +16,7 @@ def run_video(config_path: str):
     video_name = os.path.basename(random_video_path).split('.')[0]
 
     output_path = os.path.join(config.paths.output, f"{video_name}_detected.mp4")
-    player_detector = PenaltyKickDetector(config_path=config_path)
+    player_detector = ObjectDetector(config_path=config_path)
     frames = VideoProcessor(str(random_video_path)).extract_all_frames_as_array()
 
     tracker = PlayerTracker(player_detector)

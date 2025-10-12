@@ -1,4 +1,4 @@
-from penalty_vision.detection.penalty_kick_detector import PenaltyKickDetector
-from penalty_vision.detection.pose_detection import PoseDetection
+from penalty_vision.detection.object_detector import ObjectDetector
+from penalty_vision.detection.pose_detector import PoseDetector
 
-__all__ = ['PenaltyKickDetector', 'PoseDetection']
+__all__ = ['ObjectDetector', 'PoseDetector']

@@ -3,8 +3,8 @@ import os
 from pathlib import Path
 from typing import Dict
 
-from penalty_vision.detection.penalty_kick_detector import PenaltyKickDetector
-from penalty_vision.detection.pose_detection import PoseDetection
+from penalty_vision.detection.object_detector import ObjectDetector
+from penalty_vision.detection.pose_detector import PoseDetector
 from penalty_vision.processor.context_constraint import ContextConstraint
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
@@ -21,10 +21,10 @@ class PenaltyKickPreprocessor:
         self.output_dir = Path(self.config.paths.output)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-        self.player_detector = PenaltyKickDetector(config_path=config_path)
+        self.player_detector = ObjectDetector(config_path=config_path)
         self.player_tracker = PlayerTracker(self.player_detector)
         self.ball_tracker = BallTracker(self.player_detector)
-        self.pose_detector = PoseDetection()
+        self.pose_detector = PoseDetector()
 
         logger.info("PenaltyKickPreprocessor initialized")
 
