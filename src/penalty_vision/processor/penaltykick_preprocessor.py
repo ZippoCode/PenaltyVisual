@@ -33,7 +33,6 @@ class PenaltyKickPreprocessor:
 
         video_name = os.path.basename(video_path).split('.')[0]
 
-        # Crea cartella dedicata per questo video
         video_output_dir = self.output_dir / video_name
         video_output_dir.mkdir(parents=True, exist_ok=True)
 

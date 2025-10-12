@@ -62,3 +62,21 @@ class PlayerMotionAnalyzer:
             return np.argmax(self.motion_smoothed)
 
         return potential_kicks[0]
+
+    def detect_runup_start(self, kick_frame: int, threshold_ratio=0.3, min_baseline_frames=5) -> Optional[int]:
+        if self.motion_smoothed is None:
+            raise ValueError("Apply smoothing first")
+
+        if kick_frame < min_baseline_frames:
+            return 0
+
+        search_window = self.motion_smoothed[:kick_frame]
+
+        baseline = np.mean(search_window[:min(min_baseline_frames, len(search_window))])
+        threshold = baseline + (np.max(search_window) - baseline) * threshold_ratio
+
+        for i in range(len(search_window)):
+            if search_window[i] > threshold:
+                return max(0, i - 2)
+
+        return 0
