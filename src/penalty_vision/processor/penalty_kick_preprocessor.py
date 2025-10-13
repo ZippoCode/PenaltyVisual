@@ -1,8 +1,8 @@
-import json
 import os
 from pathlib import Path
 from typing import Dict
 
+from penalty_vision.detection.kick_detector import KickDetector
 from penalty_vision.detection.object_detector import ObjectDetector
 from penalty_vision.detection.pose_detector import PoseDetector
 from penalty_vision.processor.context_constraint import ContextConstraint
@@ -10,8 +10,6 @@ from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
 from penalty_vision.utils import Config, logger
-from penalty_vision.utils.drawing import draw_detections_on_frames
-from penalty_vision.utils.ioutils import save_video
 
 
 class PenaltyKickPreprocessor:
@@ -28,58 +26,25 @@ class PenaltyKickPreprocessor:
 
         logger.info("PenaltyKickPreprocessor initialized")
 
-    def process_video(self, video_path: str) -> Dict:
-        logger.info(f"Processing video: {video_path}")
-
+    def extract_embeddings_data(self, video_path: str) -> Dict:
+        logger.info(f"Extracting embeddings data: {video_path}")
         video_name = os.path.basename(video_path).split('.')[0]
 
-        video_output_dir = self.output_dir / video_name
-        video_output_dir.mkdir(parents=True, exist_ok=True)
+        with VideoProcessor(str(video_path)) as vp:
+            frames = vp.extract_all_frames_as_array()
 
-        vp = VideoProcessor(str(video_path))
-        frames = vp.extract_all_frames_as_array()
-        fps = vp.fps
-        vp.release()
+            player_detections = self.player_tracker.track_frames(frames)
+            ball_detections = self.ball_tracker.track_frames(frames)
 
-        player_detections = self.player_tracker.track_frames(frames)
-        ball_detections = self.ball_tracker.track_frames(frames)
+            kick_detector = KickDetector(frames, player_detections, ball_detections)
+            temporal_segmentation = kick_detector.segment_penalty_phases()
+            constrained_frames = kick_detector.constrained_frames
 
-        tracked_frames = draw_detections_on_frames(frames, player_detections, ball_detections)
-        poses_detected = self.pose_detector.extract_poses_from_detections(frames, player_detections)
-        dp_frames = self.pose_detector.draw_poses_on_frames(tracked_frames, poses_detected)
-
-        output_pose_path = video_output_dir / "pose_detected.mp4"
-        save_video(dp_frames, str(output_pose_path), fps=fps)
-
-        context_constraint = ContextConstraint(frames)
-        constrained_frames = context_constraint.process_tracked_sequence(player_detections)
-
-        constrained_output = video_output_dir / "context_constrained.mp4"
-        save_video(constrained_frames, str(constrained_output), fps=fps)
-
-        poses_on_constrained = self.pose_detector.draw_poses_on_frames(constrained_frames, poses_detected)
-        constrained_pose_output = video_output_dir / "constrained_with_poses.mp4"
-        save_video(poses_on_constrained, str(constrained_pose_output), fps=fps)
-
-        result = {
+        return {
             "video_name": video_name,
-            "video_path": str(video_path),
-            "total_frames": len(frames),
-            "fps": fps,
-            "ball_detections": ball_detections,
-            "outputs": {
-                "pose_detected": str(output_pose_path),
-                "context_constrained": str(constrained_output),
-                "constrained_with_poses": str(constrained_pose_output)
-            }
+            "constrained_frames": constrained_frames,
+            "temporal_segmentation": temporal_segmentation
         }
-
-        info_path = video_output_dir / "info.json"
-        with open(info_path, 'w') as f:
-            json.dump(result, f, indent=2)
-
-        logger.info(f"Video processed successfully: {video_name}")
-        return result
 
     def __enter__(self):
         return self
