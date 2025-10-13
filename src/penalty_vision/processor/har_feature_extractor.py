@@ -1,0 +1,62 @@
+import torch
+import torch.nn as nn
+from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
+import numpy as np
+from typing import Dict
+
+
+class HARFeatureExtractor:
+    def __init__(self, device: str = "cuda"):
+        self.device = torch.device(device if torch.cuda.is_available() else "cpu")
+        self.weights = MViT_V2_S_Weights.KINETICS400_V1
+        self.model = self._load_model()
+        self.transform = self.weights.transforms()
+        self.n_frames = 16
+    
+    def _load_model(self) -> nn.Module:
+        model = mvit_v2_s(weights=self.weights)
+        model.head = nn.Identity()
+        model = model.to(self.device)
+        model.eval()
+        return model
+    
+    def _resample_frames(self, frames: np.ndarray) -> np.ndarray:
+        n_available = len(frames)
+        if n_available == self.n_frames:
+            return frames
+        indices = np.linspace(0, n_available - 1, self.n_frames, dtype=int)
+        return frames[indices]
+    
+    def extract_embeddings(self, frames: np.ndarray) -> torch.Tensor:
+        frames = self._resample_frames(frames)
+        video_tensor = torch.from_numpy(frames).permute(0, 3, 1, 2).unsqueeze(0)
+        video_tensor = video_tensor.float() / 255.0
+        video_tensor = self.transform(video_tensor).to(self.device)
+        
+        with torch.no_grad():
+            features = self.model(video_tensor)
+        
+        return features.cpu()
+    
+    def process_penalty_kick(self, running_frames: np.ndarray, kicking_frames: np.ndarray) -> Dict[str, torch.Tensor]:
+        return {
+            "running_embedding": self.extract_embeddings(running_frames),
+            "kicking_embedding": self.extract_embeddings(kicking_frames)
+        }
+        
+
+
+def test_different_frame_counts():
+    extractor = HARFeatureExtractor(device="cpu")
+    
+    for n_frames in [8, 16, 32]:
+        try:
+            frames = np.random.randint(0, 255, (n_frames, 224, 224, 3), dtype=np.uint8)
+            result = extractor.extract_embeddings(frames)
+            print(f"✓ {n_frames} frames works! Output shape: {result.shape}")
+        except Exception as e:
+            print(f"✗ {n_frames} frames failed: {e}")
+
+
+if __name__ == "__main__":
+    test_different_frame_counts()
