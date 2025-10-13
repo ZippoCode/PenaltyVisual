@@ -225,6 +225,7 @@ output/
 wandb/
 yolo11n.pt
 yolo11m.pt
+add_ssh.sh
 
 # Config files
 configs/detection.yaml
