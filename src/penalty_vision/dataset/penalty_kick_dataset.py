@@ -25,7 +25,7 @@ class PenaltyKickDataset(Dataset):
         label = encode_field_side_label(metadata['lato'])
 
         return PenaltyKickSample(
-            running_frames=data['running_frames'],
-            kicking_frames=data['kicking_frames'],
+            running_frames=data['running_embeddings'],
+            kicking_frames=data['kicking_embeddings'],
             metadata=metadata
         ), label

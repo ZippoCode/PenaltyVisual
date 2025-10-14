@@ -4,14 +4,16 @@ from typing import Dict
 import numpy as np
 import pandas as pd
 
+from penalty_vision.processor.har_feature_extractor import HARFeatureExtractor
 from penalty_vision.processor.penalty_kick_preprocessor import PenaltyKickPreprocessor
 from penalty_vision.processor.phase_frame_extractor import PhaseFrameExtractor
 from penalty_vision.utils import logger
 
 
 class PenaltyKickFeatureExtractor:
-    def __init__(self, config_path: str, output_dir: str):
+    def __init__(self, config_path: str, har_extractor: HARFeatureExtractor, output_dir: str):
         self.preprocessor = PenaltyKickPreprocessor(config_path)
+        self.har_extractor = har_extractor
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -21,13 +23,18 @@ class PenaltyKickFeatureExtractor:
         phase_extractor = PhaseFrameExtractor(result['constrained_frames'], result['temporal_segmentation'])
         phase_frames = phase_extractor.extract_training_frames()
 
+        embeddings = self.har_extractor.process_penalty_kick(
+            phase_frames['running_frames'],
+            phase_frames['kicking_frames']
+        )
+
         video_name = result['video_name']
         output_path = self.output_dir / f"{video_name}.npz"
 
         np.savez(
             output_path,
-            running_frames=phase_frames['running_frames'],
-            kicking_frames=phase_frames['kicking_frames'],
+            running_embeddings=embeddings['running_embedding'].numpy(),
+            kicking_embeddings=embeddings['kicking_embedding'].numpy(),
             metadata=metadata
         )
 
@@ -36,8 +43,8 @@ class PenaltyKickFeatureExtractor:
         return {
             'video_name': video_name,
             'output_path': str(output_path),
-            'running_frames_shape': phase_frames['running_frames'].shape,
-            'kicking_frames_shape': phase_frames['kicking_frames'].shape
+            'running_embeddings_shape': embeddings['running_embedding'].shape,
+            'kicking_embeddings_shape': embeddings['kicking_embedding'].shape
         }
 
     def process_dataset_from_csv(self, csv_path: str, video_dir: str) -> Dict:

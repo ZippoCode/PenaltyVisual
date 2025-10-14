@@ -3,18 +3,28 @@ from typing import Tuple
 import torch
 from torch.utils.data import DataLoader
 
-from penalty_vision.dataset.dataset_utils import create_stratified_split
+from penalty_vision.dataset.dataset_utils import create_stratified_split, encode_metadata
 from penalty_vision.dataset.penalty_kick_dataset import PenaltyKickDataset
 
 
 def collate_fn(batch):
-    samples, labels = zip(*batch)
+    valid_batch = []
 
-    running_frames = torch.stack([torch.from_numpy(s.running_frames) for s in samples])
-    kicking_frames = torch.stack([torch.from_numpy(s.kicking_frames) for s in samples])
+    for sample, label in batch:
+        if sample.running_frames.size > 0 and sample.kicking_frames.size > 0:
+            valid_batch.append((sample, label))
+
+    if len(valid_batch) == 0:
+        return None
+
+    samples, labels = zip(*valid_batch)
+
+    running_embeddings = torch.stack([torch.from_numpy(s.running_frames) for s in samples])
+    kicking_embeddings = torch.stack([torch.from_numpy(s.kicking_frames) for s in samples])
+    metadata = torch.stack([torch.from_numpy(encode_metadata(s.metadata)) for s in samples])
     labels = torch.tensor(labels, dtype=torch.long)
 
-    return (running_frames, kicking_frames), labels
+    return (running_embeddings, kicking_embeddings, metadata), labels
 
 
 def create_dataloaders(
