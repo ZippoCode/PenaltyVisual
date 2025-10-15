@@ -3,7 +3,7 @@ from typing import Dict
 import numpy as np
 
 
-class PhaseFrameExtractor:
+class PhaseFrameSampler:
 
     def __init__(self, frames: np.ndarray, temporal_segmentation: Dict):
         self.frames = frames

@@ -1,7 +1,7 @@
-# penalty_vision/preprocessing/context_constraint.py
+from typing import List, Dict
 
 import numpy as np
-from typing import List, Dict, Tuple
+
 from penalty_vision.utils import logger
 
 
@@ -48,7 +48,7 @@ class ContextConstraint:
                     frames_since_last_detection += 1
                     # logger.debug(f"Frame {frame_idx}: propagating bbox from {frames_since_last_detection} frames ago")
                 # else:
-                    # logger.warning(f"Frame {frame_idx}: no bbox and max propagation limit reached")
+                # logger.warning(f"Frame {frame_idx}: no bbox and max propagation limit reached")
 
             if current_bbox is not None:
                 x1, y1, x2, y2 = current_bbox

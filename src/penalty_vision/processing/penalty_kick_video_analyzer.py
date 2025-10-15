@@ -5,13 +5,13 @@ from typing import Dict
 from penalty_vision.detection.kick_detector import KickDetector
 from penalty_vision.detection.object_detector import ObjectDetector
 from penalty_vision.detection.pose_detector import PoseDetector
-from penalty_vision.processor.video_processor import VideoProcessor
+from penalty_vision.processing.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
 from penalty_vision.utils import Config, logger
 
 
-class PenaltyKickPreprocessor:
+class PenaltyKickVideoAnalyzer:
     def __init__(self, config_path: str):
         self.config = Config.from_yaml(config_path)
 
@@ -25,7 +25,7 @@ class PenaltyKickPreprocessor:
 
         logger.info("PenaltyKickPreprocessor initialized")
 
-    def extract_embeddings_data(self, video_path: str) -> Dict:
+    def analyze_video(self, video_path: str) -> Dict:
         logger.info(f"Extracting embeddings data: {video_path}")
         video_name = os.path.basename(video_path).split('.')[0]
 

@@ -61,6 +61,7 @@ class PathConfig:
     video_dir: str = ""
     output: str = "output"
 
+
 @dataclass
 class Config:
     model: ModelConfig = field(default_factory=ModelConfig)

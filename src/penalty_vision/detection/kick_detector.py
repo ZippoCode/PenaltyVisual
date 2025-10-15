@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 import numpy as np
 
 from penalty_vision.analysis import BallMotionAnalyzer, PlayerMotionAnalyzer
-from penalty_vision.processor.context_constraint import ContextConstraint
+from penalty_vision.processing.context_constraint import ContextConstraint
 from penalty_vision.utils import logger
 
 

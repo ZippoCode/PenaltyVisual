@@ -6,7 +6,7 @@ import torch.nn as nn
 from torchvision.models.video import mvit_v2_s, MViT_V2_S_Weights
 
 
-class HARFeatureExtractor:
+class HAREmbeddingExtractor:
     def __init__(self, device: str = "cuda"):
         self.device = torch.device(device if torch.cuda.is_available() else "cpu")
         self.weights = MViT_V2_S_Weights.KINETICS400_V1
