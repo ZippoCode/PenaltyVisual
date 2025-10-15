@@ -52,18 +52,24 @@ class MetricsCalculator:
         results = self.metrics.compute()
 
         precision_per_class = self.precision_per_class.compute()
+        if precision_per_class.dim() == 0:
+            precision_per_class = precision_per_class.unsqueeze(0)
         results['precision_per_class'] = {
             self.class_names[i]: precision_per_class[i].item()
             for i in range(len(precision_per_class))
         }
 
         recall_per_class = self.recall_per_class.compute()
+        if recall_per_class.dim() == 0:
+            recall_per_class = recall_per_class.unsqueeze(0)
         results['recall_per_class'] = {
             self.class_names[i]: recall_per_class[i].item()
             for i in range(len(recall_per_class))
         }
 
         f1_per_class = self.f1_per_class.compute()
+        if f1_per_class.dim() == 0:
+            f1_per_class = f1_per_class.unsqueeze(0)
         results['f1_per_class'] = {
             self.class_names[i]: f1_per_class[i].item()
             for i in range(len(f1_per_class))
