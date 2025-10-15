@@ -1,0 +1,124 @@
+import torch
+
+import numpy as np
+from typing import Dict, List, Tuple
+from torch.utils.data import DataLoader
+from pathlib import Path
+
+from sklearn.model_selection import train_test_split
+from penalty_vision.dataset.encoders import encode_metadata
+from penalty_vision.dataset.penalty_kick_dataset import PenaltyKickDataset
+
+
+def collate_fn(batch):
+    valid_batch = []
+
+    for sample, label in batch:
+        if sample.running_frames.size > 0 and sample.kicking_frames.size > 0:
+            valid_batch.append((sample, label))
+
+    if len(valid_batch) == 0:
+        return None
+
+    samples, labels = zip(*valid_batch)
+
+    running_embeddings = torch.stack([torch.from_numpy(s.running_frames) for s in samples])
+    kicking_embeddings = torch.stack([torch.from_numpy(s.kicking_frames) for s in samples])
+    metadata = torch.stack([torch.from_numpy(encode_metadata(s.metadata)) for s in samples])
+    labels = torch.tensor(labels, dtype=torch.long)
+
+    return (running_embeddings, kicking_embeddings, metadata), labels
+
+
+def create_stratified_split(
+        data_dir: str,
+        label_field: str,
+        train_size: float = 0.8,
+        val_size: float = 0.1,
+        test_size: float = 0.1,
+) -> Dict[str, Dict[str, List]]:
+
+    if not np.isclose(train_size + val_size + test_size, 1.0):
+        raise ValueError(f"Splits must sum to 1.0, got {train_size + val_size + test_size}")
+
+    data_dir = Path(data_dir)
+    npz_files = sorted(list(data_dir.glob("*.npz")))
+
+    if not npz_files:
+        raise ValueError(f"No .npz files found in {data_dir}")
+
+    raw_labels = []
+    for npz_file in npz_files:
+        data = np.load(npz_file, allow_pickle=True)
+        metadata = data['metadata'].item()
+        raw_labels.append(metadata[label_field])
+    unique_labels = sorted(set(raw_labels))
+    label_to_int = {label: idx for idx, label in enumerate(unique_labels)}
+
+    encoded_labels = [label_to_int[label] for label in raw_labels]
+
+    indices = np.arange(len(npz_files))
+
+    train_indices, temp_indices, train_labels, temp_labels = train_test_split(
+        indices, encoded_labels, train_size=train_size, stratify=encoded_labels, shuffle=True
+    )
+
+    val_relative_size = val_size / (val_size + test_size)
+    val_indices, test_indices, val_labels, test_labels = train_test_split(
+        temp_indices, temp_labels, test_size=1 - val_relative_size, stratify=temp_labels, shuffle=True
+    )
+
+    return {
+        'train': {
+            'files': [npz_files[i] for i in train_indices],
+            'labels': train_labels
+        },
+        'val': {
+            'files': [npz_files[i] for i in val_indices],
+            'labels': val_labels
+        },
+        'test': {
+            'files': [npz_files[i] for i in test_indices],
+            'labels': test_labels
+        }
+    }
+
+
+def create_dataloaders(
+        data_dir: str,
+        label_field: str,
+        batch_size: int = 32,
+        train_size: float = 0.8,
+        val_size: float = 0.1,
+        test_size: float = 0.1,
+        num_workers: int = 0
+) -> Tuple[DataLoader, DataLoader, DataLoader]:
+
+    splits = create_stratified_split(data_dir, label_field, train_size, val_size, test_size)
+    train_dataset = PenaltyKickDataset(splits['train']['files'], splits['train']['labels'])
+    val_dataset = PenaltyKickDataset(splits['val']['files'], splits['val']['labels'])
+    test_dataset = PenaltyKickDataset(splits['test']['files'], splits['test']['labels'])
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+        num_workers=num_workers
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_fn,
+        num_workers=num_workers
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_fn,
+        num_workers=num_workers
+    )
+
+    return train_loader, val_loader, test_loader

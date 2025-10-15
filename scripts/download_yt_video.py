@@ -6,8 +6,9 @@ from pathlib import Path
 from typing import Dict
 
 import yt_dlp
-from penalty_vision.utils.logger import logger
 from yt_dlp.utils import DownloadError
+
+from penalty_vision.utils.logger import logger
 
 
 class PenaltyVideoDownloader:
@@ -112,8 +113,8 @@ class PenaltyVideoDownloader:
         # Check duration (3–15 seconds typical for penalties)
         if duration < 3:
             return False, f"too_short ({duration}s)"
-        if duration > 15:
-            return False, f"too_long ({duration}s)"
+        # if duration > 15:
+        #    return False, f"too_long ({duration}s)"
 
         # Check resolution
         if height < 720:
@@ -250,7 +251,7 @@ class PenaltyVideoDownloader:
 
 
 def main():
-    downloader = PenaltyVideoDownloader(output_dir="dataset/raw_videos")
+    downloader = PenaltyVideoDownloader(output_dir="data/raw_videos")
 
     urls_file = "penalty_urls.txt"
     if os.path.exists(urls_file):
@@ -260,11 +261,7 @@ def main():
     else:
         logger.info("🔍 No URL file found, starting automatic search...\n")
         queries = [
-            "penalty shootout world cup",
-            "penalty kick champions league final",
-            "penalty shootout euro 2024",
-            "penalty kick compilation hd",
-            "penalty shootout decisive moment"
+            "every penalty of the season",
         ]
 
         for query in queries:

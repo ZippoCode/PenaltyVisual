@@ -229,4 +229,5 @@ add_ssh.sh
 
 # Config files
 configs/detection.yaml
+configs/training.yaml
 configs/training_yolo.yaml
