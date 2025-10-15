@@ -7,7 +7,8 @@ import torch.nn as nn
 
 class WeightedCrossEntropyLoss(nn.Module):
 
-    def __init__(self, num_classes: int, class_counts: Optional[Union[list, np.ndarray]] = None, device: str = 'cpu'):
+    def __init__(self, num_classes: int, class_counts: Optional[Union[list, np.ndarray]] = None,
+                 device: torch.device = 'cpu'):
         super(WeightedCrossEntropyLoss, self).__init__()
         self.num_classes = num_classes
         self.device = device
@@ -33,7 +34,7 @@ class WeightedCrossEntropyLoss(nn.Module):
 def get_loss_function(
         num_classes: int,
         labels: Union[list, np.ndarray, torch.Tensor],
-        device: str = 'cpu'
+        device: torch.device = None
 ) -> WeightedCrossEntropyLoss:
     if isinstance(labels, torch.Tensor):
         labels = labels.cpu().numpy()

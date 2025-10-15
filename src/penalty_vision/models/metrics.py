@@ -7,7 +7,7 @@ from torchmetrics import MetricCollection
 
 class MetricsCalculator:
 
-    def __init__(self, num_classes: int, class_names: Optional[list] = None, device: str = 'cpu'):
+    def __init__(self, num_classes: int, device: torch.device = None, class_names: Optional[list] = None):
         self.num_classes = num_classes
         self.device = device
 
@@ -94,8 +94,3 @@ class MetricsCalculator:
         results = self.compute()
         self.reset()
         return results
-
-
-def get_metrics_calculator(num_classes: int, class_names: Optional[list] = None,
-                           device: str = 'cpu') -> MetricsCalculator:
-    return MetricsCalculator(num_classes, class_names, device)
