@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -11,11 +11,21 @@ from penalty_vision.utils import logger
 
 
 class PenaltyKickFeatureExtractor:
-    def __init__(self, config_path: str, har_extractor: HARFeatureExtractor, output_dir: str):
+
+    def __init__(self, config_path: str, har_extractor: HARFeatureExtractor, output_dir: str,
+                 metadata_columns: Optional[List[str]] = None, exclude_columns: Optional[List[str]] = None):
         self.preprocessor = PenaltyKickPreprocessor(config_path)
         self.har_extractor = har_extractor
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.metadata_columns = metadata_columns
+        self.exclude_columns = exclude_columns or ['video_file']
+
+    def _extract_metadata_from_row(self, row: pd.Series) -> Dict:
+        if self.metadata_columns:
+            return {col: row[col] for col in self.metadata_columns if col in row.index}
+        else:
+            return {col: row[col] for col in row.index if col not in self.exclude_columns}
 
     def process_single_video(self, video_path: str, metadata: Dict) -> Dict:
         result = self.preprocessor.extract_embeddings_data(video_path)
@@ -35,7 +45,7 @@ class PenaltyKickFeatureExtractor:
             output_path,
             running_embeddings=embeddings['running_embedding'].numpy(),
             kicking_embeddings=embeddings['kicking_embedding'].numpy(),
-            metadata=metadata
+            metadata=np.array(metadata, dtype=object)
         )
 
         logger.info(f"Saved {video_name}.npz")
@@ -51,7 +61,7 @@ class PenaltyKickFeatureExtractor:
         df = pd.read_csv(csv_path)
         results = {'successful': [], 'failed': []}
 
-        for idx, row in df.iterrows():
+        for i, (_, row) in enumerate(df.iterrows()):
             video_name = Path(row['video_file']).stem
             video_path = Path(video_dir) / row['video_file']
 
@@ -59,17 +69,16 @@ class PenaltyKickFeatureExtractor:
                 results['failed'].append(video_name)
                 continue
 
-            metadata = {k: row[k] for k in ['dentro_fuori', 'piede', 'lato', 'altezza', 'parato',
-                                            'angolo_camera', 'visibilita_giocatore', 'velocita_rincorsa', 'fake']}
+            metadata = self._extract_metadata_from_row(row)
 
             try:
                 self.process_single_video(str(video_path), metadata)
                 results['successful'].append(video_name)
-                logger.info(f"✓ [{idx + 1}/{len(df)}] {video_name}")
+                logger.info(f"SUCCESS [{i + 1}/{len(df)}] {video_name}")
 
             except Exception as e:
                 results['failed'].append(video_name)
-                logger.error(f"✗ [{idx + 1}/{len(df)}] {video_name} - {e}")
+                logger.error(f"FAILED [{i + 1}/{len(df)}] {video_name} - {e}")
 
         return results
 

@@ -5,7 +5,6 @@ from typing import Dict
 from penalty_vision.detection.kick_detector import KickDetector
 from penalty_vision.detection.object_detector import ObjectDetector
 from penalty_vision.detection.pose_detector import PoseDetector
-from penalty_vision.processor.context_constraint import ContextConstraint
 from penalty_vision.processor.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
