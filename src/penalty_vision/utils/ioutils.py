@@ -1,5 +1,6 @@
 import os
 import random
+import torch
 from pathlib import Path
 from typing import List
 
@@ -26,7 +27,7 @@ def save_frames(frames: List[np.ndarray], output_dir: str, prefix: str = "frame"
 
 
 def save_video(frames: np.ndarray, output_path: str, fps: float = 30.0):
-    total_frames, height, width = frames.shape[:3]
+    _, height, width = frames.shape[:3]
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
@@ -56,3 +57,16 @@ def choice_random_image(frame_dir: str) -> str:
     random_frame = random.choice(frames)
     frame_path = os.path.join(frame_dir, random_frame)
     return frame_path
+
+
+def get_device():
+    if torch.cuda.is_available():
+        device = 'cuda'
+        logger.info(f"CUDA available: {torch.cuda.get_device_name(0)}")
+    elif hasattr(torch.backends, 'mps') and torch.backends.mps.is_available():
+        device = 'mps'
+        logger.info("MPS (Apple Silicon) available")
+    else:
+        device = 'cpu'
+        logger.info("Using CPU")
+    return device

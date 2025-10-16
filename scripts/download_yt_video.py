@@ -261,7 +261,7 @@ def main():
     else:
         logger.info("🔍 No URL file found, starting automatic search...\n")
         queries = [
-            "every penalty of the season",
+            "Serie A penalty compilation",
         ]
 
         for query in queries:

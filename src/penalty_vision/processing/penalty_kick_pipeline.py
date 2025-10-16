@@ -12,11 +12,17 @@ from penalty_vision.utils import logger
 
 class PenaltyKickPipeline:
 
-    def __init__(self, config_path: str, har_extractor: HAREmbeddingExtractor, output_dir: str,
-                 metadata_columns: Optional[List[str]] = None, exclude_columns: Optional[List[str]] = None):
+    def __init__(
+        self,
+        config_path: str,
+        har_extractor: HAREmbeddingExtractor,
+        output_dir: Path,
+        metadata_columns: Optional[List[str]] = None,
+        exclude_columns: Optional[List[str]] = None
+    ):
         self.preprocessor = PenaltyKickVideoAnalyzer(config_path)
         self.har_extractor = har_extractor
-        self.output_dir = Path(output_dir)
+        self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata_columns = metadata_columns
         self.exclude_columns = exclude_columns or ['video_file']
@@ -58,14 +64,19 @@ class PenaltyKickPipeline:
         }
 
     def process_dataset_from_csv(self, csv_path: str, video_dir: str) -> Dict:
+        csv_path = Path(csv_path)
+
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
         df = pd.read_csv(csv_path)
         results = {'successful': [], 'failed': []}
 
         for i, (_, row) in enumerate(df.iterrows()):
             video_name = Path(row['video_file']).stem
             video_path = Path(video_dir) / row['video_file']
-
             if not video_path.exists():
+                logger.error(f"Video file not found: {video_path}")
                 results['failed'].append(video_name)
                 continue
 

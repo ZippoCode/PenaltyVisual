@@ -4,7 +4,6 @@ from typing import Dict
 
 from penalty_vision.detection.kick_detector import KickDetector
 from penalty_vision.detection.object_detector import ObjectDetector
-from penalty_vision.detection.pose_detector import PoseDetector
 from penalty_vision.processing.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
@@ -21,7 +20,6 @@ class PenaltyKickVideoAnalyzer:
         self.player_detector = ObjectDetector(config_path=config_path)
         self.player_tracker = PlayerTracker(self.player_detector)
         self.ball_tracker = BallTracker(self.player_detector)
-        self.pose_detector = PoseDetector()
 
         logger.info("PenaltyKickPreprocessor initialized")
 
