@@ -47,7 +47,6 @@ class PenaltyVideoDownloader:
         return max(numbers) + 1 if numbers else 1
 
     def _progress_hook(self, d):
-        """Hook to display download progress"""
         if d['status'] == 'downloading':
             percent = d.get('_percent_str', 'N/A')
             speed = d.get('_speed_str', 'N/A')
@@ -57,82 +56,44 @@ class PenaltyVideoDownloader:
             logger.info(f"  Download completed, processing...")
 
     def _get_ydl_opts(self, output_path: Path) -> Dict:
-        """Configure yt-dlp options"""
         return {
-            # Video format
             'format': 'bestvideo[height>=720][ext=mp4]+bestaudio[ext=m4a]/best[height>=720][ext=mp4]/best',
             'format_sort': ['res:720', 'fps:30'],
-
-            # Output
             'outtmpl': str(output_path),
             'restrictfilenames': True,
-
-            # Quality and limits
-            'max_filesize': 100 * 1024 * 1024,  # 100MB
-
-            # Post-processing
+            'max_filesize': 100 * 1024 * 1024,
             'postprocessors': [{
                 'key': 'FFmpegVideoConvertor',
                 'preferedformat': 'mp4',
             }],
-
-            # Metadata
             'writeinfojson': True,
             'writethumbnail': True,
-
-            # Rate limiting
-            'ratelimit': 2 * 1024 * 1024,  # 2MB/s
+            'ratelimit': 2 * 1024 * 1024,
             'sleep_interval': 2,
             'max_sleep_interval': 5,
-
-            # Retry
             'retries': 3,
             'fragment_retries': 3,
-
-            # Other
             'noplaylist': True,
             'quiet': False,
             'no_warnings': False,
             'progress_hooks': [self._progress_hook],
-
-            # Avoid common errors
             'ignoreerrors': False,
             'nocheckcertificate': False,
         }
 
     def _validate_video(self, info_dict: Dict) -> tuple[bool, str]:
-        """
-        Validate the downloaded video
-
-        Returns:
-            (is_valid, reason)
-        """
         duration = info_dict.get('duration', 0)
         height = info_dict.get('height', 0)
 
-        # Check duration (3–15 seconds typical for penalties)
         if duration < 3:
             return False, f"too_short ({duration}s)"
-        # if duration > 15:
-        #    return False, f"too_long ({duration}s)"
 
-        # Check resolution
         if height < 720:
             return False, f"low_quality ({height}p)"
 
         return True, "ok"
 
     def download_video(self, url: str) -> bool:
-        """
-        Download a single YouTube video
-
-        Args:
-            url: YouTube video URL
-
-        Returns:
-            True if download succeeded, False otherwise
-        """
-        # Skip if already downloaded
         if url in self.downloaded_urls:
             logger.info(f"Video already downloaded: {url}")
             return False
@@ -143,30 +104,23 @@ class PenaltyVideoDownloader:
         logger.info(f"\n[{self.video_count}] Downloading: {url}")
 
         try:
-            # Configure yt-dlp
             ydl_opts = self._get_ydl_opts(output_path)
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                # Extract video info before downloading
                 info = ydl.extract_info(url, download=False)
-
-                # Validate before downloading
                 is_valid, reason = self._validate_video(info)
 
                 if not is_valid:
                     logger.warning(f"✗ Invalid video: {reason}")
                     return False
 
-                # Download
                 info = ydl.extract_info(url, download=True)
 
-                # Verify downloaded file
                 video_file = output_path.with_suffix('.mp4')
                 if not video_file.exists():
                     logger.error(f"✗ File not found after download")
                     return False
 
-                # Save metadata
                 self.downloaded_urls[url] = {
                     'filename': video_file.name,
                     'duration': info.get('duration'),
@@ -205,7 +159,6 @@ class PenaltyVideoDownloader:
 
         for i, url in enumerate(urls, 1):
             logger.info(f"\n[{i}/{len(urls)}] Processing...")
-
             self.download_video(url)
 
             if i < len(urls):
@@ -240,7 +193,6 @@ class PenaltyVideoDownloader:
 
                     url = f"https://www.youtube.com/watch?v={video['id']}"
                     logger.info(f"\n[{i}/{len(videos)}] {video.get('title', 'N/A')}")
-
                     self.download_video(url)
 
                     if i < len(videos):
@@ -251,13 +203,20 @@ class PenaltyVideoDownloader:
 
 
 def main():
-    downloader = PenaltyVideoDownloader(output_dir="data/raw_videos")
+    import argparse
 
-    urls_file = "penalty_urls.txt"
-    if os.path.exists(urls_file):
-        logger.info(f"📄 Found URL file: {urls_file}")
-        downloader.download_from_file(urls_file, delay=3)
+    parser = argparse.ArgumentParser(description='Download penalty kick videos from YouTube')
+    parser.add_argument('--output', type=str, default='data/raw_videos',
+                        help='Output directory for downloaded videos')
+    parser.add_argument('--urls', type=str, default='penalty_urls.txt',
+                        help='File containing YouTube URLs (one per line)')
+    args = parser.parse_args()
 
+    downloader = PenaltyVideoDownloader(output_dir=args.output)
+
+    if os.path.exists(args.urls):
+        logger.info(f"📄 Found URL file: {args.urls}")
+        downloader.download_from_file(args.urls, delay=3)
     else:
         logger.info("🔍 No URL file found, starting automatic search...\n")
         queries = [

@@ -42,13 +42,3 @@ class PenaltyKickVideoAnalyzer:
             "constrained_frames": constrained_frames,
             "temporal_segmentation": temporal_segmentation
         }
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.pose_detector.release()
-        return False
-
-    def release(self):
-        self.pose_detector.release()

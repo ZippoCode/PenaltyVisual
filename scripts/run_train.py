@@ -10,7 +10,7 @@ from penalty_vision.models.metrics import MetricsCalculator
 from penalty_vision.models.optimizer import get_optimizer
 from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
 from penalty_vision.training.trainer import Trainer
-
+from penalty_vision.utils.logger import logger
 
 def main():
     parser = argparse.ArgumentParser()
@@ -19,7 +19,7 @@ def main():
 
     config = get_training_config(args.config)
     device = torch.device(config.device)
-    print(f"Using device: {device}")
+    logger.info(f"Using device: {device}")
 
     torch.manual_seed(config.seed)
     if device.type == 'cuda':
@@ -69,12 +69,12 @@ def main():
         checkpoint_dir=str(config.checkpoint_dir)
     )
 
-    print("Starting training...")
-    print(f"Experiment: {config.experiment_name}")
-    print(f"Batch size: {config.data.batch_size}")
-    print(f"Number of epochs: {config.training.num_epochs}")
-    print(f"Learning rate: {config.training.learning_rate}")
-    print("-" * 50)
+    logger.info("Starting training...")
+    logger.info(f"Experiment: {config.experiment_name}")
+    logger.info(f"Batch size: {config.data.batch_size}")
+    logger.info(f"Number of epochs: {config.training.num_epochs}")
+    logger.info(f"Learning rate: {config.training.learning_rate}")
+    logger.info("-" * 50)
 
     best_accuracy = trainer.train(
         train_loader=train_loader,
@@ -82,7 +82,7 @@ def main():
         num_epochs=config.training.num_epochs
     )
 
-    print(f"\nTraining finished! Best validation accuracy: {best_accuracy:.4f}")
+    logger.info(f"\nTraining finished! Best validation accuracy: {best_accuracy:.4f}")
 
 
 if __name__ == '__main__':

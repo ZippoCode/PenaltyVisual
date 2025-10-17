@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Literal
 
@@ -17,7 +17,7 @@ class ModelConfig:
 
 @dataclass
 class DataConfig:
-    data_dir: Path = Path("")
+    data_dir: Path = field(default_factory=Path)
     label_field: Literal["side", "direction", "outcome"] = "side"
     batch_size: int = 32
     num_workers: int = 4
@@ -52,15 +52,15 @@ class LossConfig:
 
 @dataclass
 class Config:
-    model: ModelConfig = ModelConfig()
-    data: DataConfig = DataConfig()
-    training: TrainingConfig = TrainingConfig()
-    loss: LossConfig = LossConfig()
-    checkpoint_dir: Path = Path()
-    log_dir: Path = Path()
+    model: ModelConfig = field(default_factory=ModelConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    training: TrainingConfig = field(default_factory=TrainingConfig)
+    loss: LossConfig = field(default_factory=LossConfig)
+    checkpoint_dir: Path = field(default_factory=Path)
+    log_dir: Path = field(default_factory=Path)
     experiment_name: str = "two_stream_lstm"
     seed: int = 42
-    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    device: str = field(default_factory=lambda: "cuda" if torch.cuda.is_available() else "cpu")
     save_best_only: bool = True
     save_every_n_epochs: Optional[int] = None
     resume_from_checkpoint: Optional[Path] = None

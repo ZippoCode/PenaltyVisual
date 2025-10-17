@@ -1,13 +1,12 @@
 import torch
-
 import numpy as np
 from typing import Dict, List, Tuple
 from torch.utils.data import DataLoader
 from pathlib import Path
-
 from sklearn.model_selection import train_test_split
 from penalty_vision.dataset.encoders import encode_metadata
 from penalty_vision.dataset.penalty_kick_dataset import PenaltyKickDataset
+from penalty_vision.utils.logger import logger
 
 
 def collate_fn(batch):
@@ -30,14 +29,7 @@ def collate_fn(batch):
     return (running_embeddings, kicking_embeddings, metadata), labels
 
 
-def create_stratified_split(
-        data_dir: str,
-        label_field: str,
-        train_size: float = 0.8,
-        val_size: float = 0.1,
-        test_size: float = 0.1,
-) -> Dict[str, Dict[str, List]]:
-
+def create_stratified_split(data_dir: str, label_field: str, train_size: float = 0.8, val_size: float = 0.1, test_size: float = 0.1) -> Dict[str, Dict[str, List]]:
     if not np.isclose(train_size + val_size + test_size, 1.0):
         raise ValueError(f"Splits must sum to 1.0, got {train_size + val_size + test_size}")
 
@@ -47,15 +39,22 @@ def create_stratified_split(
     if not npz_files:
         raise ValueError(f"No .npz files found in {data_dir}")
 
+    logger.info(f"Found {len(npz_files)} .npz files in {data_dir}")
+
     raw_labels = []
     for npz_file in npz_files:
         data = np.load(npz_file, allow_pickle=True)
         metadata = data['metadata'].item()
         raw_labels.append(metadata[label_field])
+
     unique_labels = sorted(set(raw_labels))
     label_to_int = {label: idx for idx, label in enumerate(unique_labels)}
+    logger.info(f"Unique labels found: {unique_labels}")
+    logger.info(f"Label encoding: {label_to_int}")
 
     encoded_labels = [label_to_int[label] for label in raw_labels]
+
+    logger.info(f"Label distribution: {dict(zip(*np.unique(encoded_labels, return_counts=True)))}")
 
     indices = np.arange(len(npz_files))
 
@@ -67,6 +66,8 @@ def create_stratified_split(
     val_indices, test_indices, val_labels, test_labels = train_test_split(
         temp_indices, temp_labels, test_size=1 - val_relative_size, stratify=temp_labels, shuffle=True
     )
+
+    logger.info(f"Train samples: {len(train_indices)}, Val samples: {len(val_indices)}, Test samples: {len(test_indices)}")
 
     return {
         'train': {
@@ -84,17 +85,11 @@ def create_stratified_split(
     }
 
 
-def create_dataloaders(
-        data_dir: str,
-        label_field: str,
-        batch_size: int = 32,
-        train_size: float = 0.8,
-        val_size: float = 0.1,
-        test_size: float = 0.1,
-        num_workers: int = 0
-) -> Tuple[DataLoader, DataLoader, DataLoader]:
+def create_dataloaders(data_dir: str, label_field: str, batch_size: int = 32, train_size: float = 0.8, val_size: float = 0.1, test_size: float = 0.1, num_workers: int = 0) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    logger.info(f"Creating dataloaders with batch_size={batch_size}, num_workers={num_workers}")
 
     splits = create_stratified_split(data_dir, label_field, train_size, val_size, test_size)
+
     train_dataset = PenaltyKickDataset(splits['train']['files'], splits['train']['labels'])
     val_dataset = PenaltyKickDataset(splits['val']['files'], splits['val']['labels'])
     test_dataset = PenaltyKickDataset(splits['test']['files'], splits['test']['labels'])
@@ -120,5 +115,7 @@ def create_dataloaders(
         collate_fn=collate_fn,
         num_workers=num_workers
     )
+
+    logger.info("Dataloaders created successfully")
 
     return train_loader, val_loader, test_loader
