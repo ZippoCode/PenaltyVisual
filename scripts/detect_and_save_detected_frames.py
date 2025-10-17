@@ -21,8 +21,8 @@ def extract_and_save_penalty_frames(video_path, config_path, output_dir):
     running_dir = output_dir / "running"
     kicking_dir = output_dir / "kicking"
 
-    save_frames(running_frames, running_dir, "frame_")
-    save_frames(kicking_frames, kicking_dir, "frame_")
+    save_frames(running_frames, running_dir, "frame")
+    save_frames(kicking_frames, kicking_dir, "frame")
 
 
 if __name__ == "__main__":

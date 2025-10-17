@@ -8,6 +8,8 @@ from penalty_vision.processing.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
 from penalty_vision.utils import Config, logger
+from penalty_vision.utils.drawing import draw_detections_on_frames
+from penalty_vision.utils.ioutils import save_video
 
 
 class PenaltyKickVideoAnalyzer:
@@ -32,6 +34,12 @@ class PenaltyKickVideoAnalyzer:
 
             player_detections = self.player_tracker.track_frames(frames)
             ball_detections = self.ball_tracker.track_frames(frames)
+
+            # DEBUG
+            drawn_frames = draw_detections_on_frames(frames, player_detections, ball_detections)
+            os.makedirs("output/detections/", exist_ok=True)
+            save_video(frames=drawn_frames, output_path=f"output/detections/{video_name}.mp4", fps=25.0)
+            ###
 
             kick_detector = KickDetector(frames, player_detections, ball_detections)
             temporal_segmentation = kick_detector.segment_penalty_phases()

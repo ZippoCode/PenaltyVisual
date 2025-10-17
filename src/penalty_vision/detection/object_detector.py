@@ -72,29 +72,3 @@ class ObjectDetector:
 
     def detect_ball(self, frame: np.ndarray) -> List[Dict]:
         return self.detect(frame, self.BALL_CLASS_ID)
-
-    def track(self, frame: np.ndarray, class_id: int, persist: bool = True) -> List[Dict]:
-        results = self.model.track(frame, persist=persist, verbose=False, conf=self.confidence, tracker=self.tracker)
-
-        detections = []
-
-        for result in results:
-            boxes = result.boxes
-            for box in boxes:
-                if int(box.cls) == class_id:
-                    x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
-                    conf_score = float(box.conf)
-                    area = int((x2 - x1) * (y2 - y1))
-                    track_id = int(box.id) if box.id is not None else -1
-
-                    detections.append(
-                        {'bbox': (int(x1), int(y1), int(x2), int(y2)), 'confidence': conf_score, 'area': area,
-                         'track_id': track_id})
-
-        return detections
-
-    def track_kicker(self, frame: np.ndarray, persist: bool = True) -> List[Dict]:
-        return self.track(frame, self.KICKER_CLASS_ID, persist)
-
-    def track_ball(self, frame: np.ndarray, persist: bool = True) -> List[Dict]:
-        return self.track(frame, self.BALL_CLASS_ID, persist)

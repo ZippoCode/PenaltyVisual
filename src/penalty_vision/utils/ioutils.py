@@ -32,6 +32,9 @@ def save_video(frames: np.ndarray, output_path: str, fps: float = 30.0):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
+    if not out.isOpened():
+        raise RuntimeError(f"Failed to create video writer for {output_path}")
+
     for frame in frames:
         out.write(frame)
 
