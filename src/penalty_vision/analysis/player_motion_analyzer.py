@@ -63,20 +63,31 @@ class PlayerMotionAnalyzer:
 
         return potential_kicks[0]
 
-    def detect_runup_start(self, kick_frame: int, threshold_ratio=0.3, min_baseline_frames=5) -> Optional[int]:
+    def detect_runup_start(self, kick_frame: int, threshold_ratio=0.15, min_baseline_frames=5, min_consecutive_frames=3,
+                           velocity_threshold=0.05) -> Optional[int]:
         if self.motion_smoothed is None:
             raise ValueError("Apply smoothing first")
-
         if kick_frame < min_baseline_frames:
             return 0
-
         search_window = self.motion_smoothed[:kick_frame]
-
         baseline = np.mean(search_window[:min(min_baseline_frames, len(search_window))])
-        threshold = baseline + (np.max(search_window) - baseline) * threshold_ratio
-
+        baseline_std = np.std(search_window[:min(min_baseline_frames, len(search_window))])
+        threshold = baseline + max(baseline_std * 2, (np.max(search_window) - baseline) * threshold_ratio)
+        velocity = np.diff(search_window)
+        velocity = np.insert(velocity, 0, 0)
+        consecutive_count = 0
+        candidate_start = None
+        for i in range(len(search_window)):
+            if search_window[i] > threshold and velocity[i] > velocity_threshold:
+                if consecutive_count == 0:
+                    candidate_start = i
+                consecutive_count += 1
+                if consecutive_count >= min_consecutive_frames:
+                    return max(0, candidate_start - 2)
+            else:
+                consecutive_count = 0
+                candidate_start = None
         for i in range(len(search_window)):
             if search_window[i] > threshold:
                 return max(0, i - 2)
-
         return 0
