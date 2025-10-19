@@ -13,12 +13,12 @@ from penalty_vision.utils import logger
 class PenaltyKickPipeline:
 
     def __init__(
-        self,
-        config_path: str,
-        har_extractor: HAREmbeddingExtractor,
-        output_dir: Path,
-        metadata_columns: Optional[List[str]] = None,
-        exclude_columns: Optional[List[str]] = None
+            self,
+            config_path: str,
+            har_extractor: HAREmbeddingExtractor,
+            output_dir: Path,
+            metadata_columns: Optional[List[str]] = None,
+            exclude_columns: Optional[List[str]] = None
     ):
         self.preprocessor = PenaltyKickVideoAnalyzer(config_path)
         self.har_extractor = har_extractor
@@ -97,5 +97,4 @@ class PenaltyKickPipeline:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.preprocessor.release()
         return False

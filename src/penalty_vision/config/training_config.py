@@ -13,6 +13,7 @@ class ModelConfig:
     num_layers: int = 2
     dropout: float = 0.3
     bidirectional: bool = True
+    metadata_size: int = 270
 
 
 @dataclass

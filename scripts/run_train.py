@@ -12,6 +12,7 @@ from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
 from penalty_vision.training.trainer import Trainer
 from penalty_vision.utils.logger import logger
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=Path, help='Path to config YAML file')
@@ -33,7 +34,7 @@ def main():
     )
     model = model.to(device)
 
-    train_loader, val_loader, test_loader = create_dataloaders(
+    train_loader, val_loader, _ = create_dataloaders(
         data_dir=str(config.data.data_dir),
         label_field=config.data.label_field,
         batch_size=config.data.batch_size,
