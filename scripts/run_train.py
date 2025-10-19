@@ -30,7 +30,8 @@ def main():
         input_size=config.model.input_size,
         hidden_size=config.model.hidden_size,
         num_classes=config.model.num_classes,
-        dropout=config.model.dropout
+        dropout=config.model.dropout,
+        metadata_size=config.model.metadata_size
     )
     model = model.to(device)
 
