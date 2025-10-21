@@ -1,7 +1,15 @@
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._generate_schema")
+
 import argparse
 from pathlib import Path
 
 import torch
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from penalty_vision.config.training_config import get_training_config
 from penalty_vision.dataset.dataloaders import create_dataloaders
 from penalty_vision.models.losses import get_loss_function
@@ -25,6 +33,16 @@ def main():
 
     set_seed(config.seed)
 
+    train_loader, val_loader, test_loader, dataset_info = create_dataloaders(
+        data_dir=str(config.data.data_dir),
+        label_field=config.data.label_field,
+        batch_size=config.data.batch_size,
+        train_size=config.data.train_split,
+        val_size=config.data.val_split,
+        test_size=config.data.test_split,
+        num_workers=config.data.num_workers
+    )
+
     wandb_logger = WandBLogger(
         experiment_name=config.experiment_name,
         config={
@@ -39,7 +57,15 @@ def main():
             "gradient_clip_val": config.training.gradient_clip_val,
             "mixed_precision": config.training.mixed_precision,
             "early_stopping_patience": config.training.early_stopping_patience,
-            "seed": config.seed
+            "seed": config.seed,
+            "dataset/total_samples": dataset_info['total_samples'],
+            "dataset/train_samples": dataset_info['train_samples'],
+            "dataset/val_samples": dataset_info['val_samples'],
+            "dataset/test_samples": dataset_info['test_samples'],
+            "dataset/num_classes": dataset_info['num_classes'],
+            "dataset/label_field": config.data.label_field,
+            "dataset/label_names": dataset_info['label_names'],
+            "dataset/label_distribution": dataset_info['label_distribution']
         }
     )
 
@@ -53,16 +79,6 @@ def main():
     model = model.to(device)
 
     wandb_logger.watch_model(model)
-
-    train_loader, val_loader, _ = create_dataloaders(
-        data_dir=str(config.data.data_dir),
-        label_field=config.data.label_field,
-        batch_size=config.data.batch_size,
-        train_size=config.data.train_split,
-        val_size=config.data.val_split,
-        test_size=config.data.test_split,
-        num_workers=config.data.num_workers
-    )
 
     train_labels = train_loader.dataset.labels
     criterion = get_loss_function(
@@ -103,6 +119,11 @@ def main():
 
     logger.info("Starting training...")
     logger.info(f"Experiment: {config.experiment_name}")
+    logger.info(
+        f"Dataset: {dataset_info['total_samples']} samples ({dataset_info['train_samples']} train, \
+        {dataset_info['val_samples']} val, {dataset_info['test_samples']} test)")
+    logger.info(f"Classes: {dataset_info['num_classes']} - {dataset_info['label_names']}")
+    logger.info(f"Label distribution: {dataset_info['label_distribution']}")
     logger.info(f"Batch size: {config.data.batch_size}")
     logger.info(f"Number of epochs: {config.training.num_epochs}")
     logger.info(f"Learning rate: {config.training.learning_rate}")

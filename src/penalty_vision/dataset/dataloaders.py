@@ -3,12 +3,11 @@ from typing import Dict, List, Tuple, Union
 
 import numpy as np
 import torch
-from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader
-
 from penalty_vision.dataset.encoders import encode_metadata
 from penalty_vision.dataset.penalty_kick_dataset import PenaltyKickDataset
 from penalty_vision.utils.logger import logger
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 
 
 def collate_fn(batch):
@@ -31,13 +30,8 @@ def collate_fn(batch):
     return (running_embeddings, kicking_embeddings, metadata), labels
 
 
-def create_stratified_split(
-        data_dir: str,
-        label_field: Union[str, List[str]],
-        train_size: float = 0.8,
-        val_size: float = 0.1,
-        test_size: float = 0.1
-) -> Dict[str, Dict[str, List]]:
+def create_stratified_split(data_dir: str, label_field: Union[str, List[str]], train_size: float = 0.8,
+                            val_size: float = 0.1, test_size: float = 0.1) -> Dict[str, Dict[str, List]]:
     if not np.isclose(train_size + val_size + test_size, 1.0):
         raise ValueError(f"Splits must sum to 1.0, got {train_size + val_size + test_size}")
 
@@ -68,7 +62,8 @@ def create_stratified_split(
 
     encoded_labels = [label_to_int[label] for label in raw_labels]
 
-    logger.info(f"Label distribution: {dict(zip(*np.unique(encoded_labels, return_counts=True)))}")
+    label_counts = dict(zip(*np.unique(encoded_labels, return_counts=True)))
+    logger.info(f"Label distribution: {label_counts}")
 
     indices = np.arange(len(npz_files))
 
@@ -99,13 +94,20 @@ def create_stratified_split(
             'files': [npz_files[i] for i in test_indices],
             'labels': test_labels,
             'label_mapping': label_to_int
+        },
+        'dataset_info': {
+            'total_samples': len(npz_files),
+            'num_classes': len(unique_labels),
+            'label_names': unique_labels,
+            'label_mapping': label_to_int,
+            'label_distribution': label_counts
         }
     }
 
 
 def create_dataloaders(data_dir: str, label_field: str, batch_size: int = 32, train_size: float = 0.8,
                        val_size: float = 0.1, test_size: float = 0.1, num_workers: int = 0) -> Tuple[
-    DataLoader, DataLoader, DataLoader]:
+    DataLoader, DataLoader, DataLoader, Dict]:
     logger.info(f"Creating dataloaders with batch_size={batch_size}, num_workers={num_workers}")
 
     splits = create_stratified_split(data_dir, label_field, train_size, val_size, test_size)
@@ -138,4 +140,9 @@ def create_dataloaders(data_dir: str, label_field: str, batch_size: int = 32, tr
 
     logger.info("Dataloaders created successfully")
 
-    return train_loader, val_loader, test_loader
+    dataset_info = splits['dataset_info']
+    dataset_info['train_samples'] = len(train_dataset)
+    dataset_info['val_samples'] = len(val_dataset)
+    dataset_info['test_samples'] = len(test_dataset)
+
+    return train_loader, val_loader, test_loader, dataset_info
