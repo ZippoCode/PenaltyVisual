@@ -4,19 +4,25 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
-from penalty_vision.processor.har_feature_extractor import HARFeatureExtractor
-from penalty_vision.processor.penalty_kick_preprocessor import PenaltyKickPreprocessor
-from penalty_vision.processor.phase_frame_extractor import PhaseFrameExtractor
+from penalty_vision.processing.har_embedding_extractor import HAREmbeddingExtractor
+from penalty_vision.processing.penalty_kick_video_analyzer import PenaltyKickVideoAnalyzer
+from penalty_vision.processing.phase_frame_sampler import PhaseFrameSampler
 from penalty_vision.utils import logger
 
 
-class PenaltyKickFeatureExtractor:
+class PenaltyKickPipeline:
 
-    def __init__(self, config_path: str, har_extractor: HARFeatureExtractor, output_dir: str,
-                 metadata_columns: Optional[List[str]] = None, exclude_columns: Optional[List[str]] = None):
-        self.preprocessor = PenaltyKickPreprocessor(config_path)
+    def __init__(
+            self,
+            config_path: str,
+            har_extractor: HAREmbeddingExtractor,
+            output_dir: Path,
+            metadata_columns: Optional[List[str]] = None,
+            exclude_columns: Optional[List[str]] = None
+    ):
+        self.preprocessor = PenaltyKickVideoAnalyzer(config_path)
         self.har_extractor = har_extractor
-        self.output_dir = Path(output_dir)
+        self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata_columns = metadata_columns
         self.exclude_columns = exclude_columns or ['video_file']
@@ -28,9 +34,9 @@ class PenaltyKickFeatureExtractor:
             return {col: row[col] for col in row.index if col not in self.exclude_columns}
 
     def process_single_video(self, video_path: str, metadata: Dict) -> Dict:
-        result = self.preprocessor.extract_embeddings_data(video_path)
+        result = self.preprocessor.analyze_video(video_path)
 
-        phase_extractor = PhaseFrameExtractor(result['constrained_frames'], result['temporal_segmentation'])
+        phase_extractor = PhaseFrameSampler(result['constrained_frames'], result['temporal_segmentation'])
         phase_frames = phase_extractor.extract_training_frames()
 
         embeddings = self.har_extractor.process_penalty_kick(
@@ -58,14 +64,19 @@ class PenaltyKickFeatureExtractor:
         }
 
     def process_dataset_from_csv(self, csv_path: str, video_dir: str) -> Dict:
+        csv_path = Path(csv_path)
+
+        if not csv_path.exists():
+            raise FileNotFoundError(f"CSV file not found: {csv_path}")
+
         df = pd.read_csv(csv_path)
         results = {'successful': [], 'failed': []}
 
         for i, (_, row) in enumerate(df.iterrows()):
             video_name = Path(row['video_file']).stem
             video_path = Path(video_dir) / row['video_file']
-
             if not video_path.exists():
+                logger.error(f"Video file not found: {video_path}")
                 results['failed'].append(video_name)
                 continue
 
@@ -86,5 +97,4 @@ class PenaltyKickFeatureExtractor:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.preprocessor.release()
         return False

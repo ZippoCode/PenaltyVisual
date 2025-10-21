@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penalty Annotator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎯 Penalty Annotator</h1>
+
+        <div class="top-bar">
+            <div class="progress">
+                <span id="progress">Load videos to start</span>
+            </div>
+            <label class="file-label">
+                📁 Load Videos
+                <input type="file" id="videoInput" class="file-input" webkitdirectory directory multiple>
+            </label>
+            <label class="file-label">
+                📄 Load CSV
+                <input type="file" id="csvInput" class="file-input" accept=".csv">
+            </label>
+        </div>
+
+        <div class="main-grid">
+            <div class="video-list">
+                <h3>Videos</h3>
+                <div class="filter-section">
+                    <label class="filter-label">Filter by:</label>
+                    <select id="filterField" class="filter-select">
+                        <option value="">All videos</option>
+                        <option value="camera_angle">Camera Angle</option>
+                        <option value="player_visibility">Visibility</option>
+                        <option value="foot">Foot</option>
+                        <option value="run_speed">Run Speed</option>
+                        <option value="fake">Fake</option>
+                        <option value="in_out">Result</option>
+                        <option value="saved">Saved</option>
+                        <option value="side">Side</option>
+                        <option value="height">Height</option>
+                    </select>
+                    <select id="filterValue" class="filter-select" style="margin-top: 4px; display: none;">
+                        <option value="">Select value...</option>
+                    </select>
+                </div>
+                <div class="video-list-container" id="videoListContainer"></div>
+            </div>
+
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="videoPlayer" controls loop></video>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-secondary" onclick="playVideo()">▶️ Play</button>
+                    <button class="btn btn-secondary" onclick="replayVideo()">🔄 Replay</button>
+                    <label style="display: flex; align-items: center; gap: 5px; font-size: 12px;">
+                        <input type="checkbox" id="loopCheckbox" checked> 🔁 Loop
+                    </label>
+                </div>
+                <div class="summary" id="summary" style="display:none;"></div>
+            </div>
+
+            <div class="form-section">
+                <div class="form-group">
+                    <label>📷 Camera Angle</label>
+                    <div class="btn-group" data-field="camera_angle">
+                        <button class="btn-option" data-value="lateral"><span>↔️</span><span>Lateral</span></button>
+                        <button class="btn-option" data-value="diagonal"><span>↗️</span><span>Diagonal</span></button>
+                        <button class="btn-option" data-value="behind"><span>⬆️</span><span>Behind</span></button>
+                        <button class="btn-option" data-value="frontal"><span>👁️</span><span>Frontal</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>👁️ Visibility</label>
+                    <div class="btn-group" data-field="player_visibility">
+                        <button class="btn-option" data-value="full"><span>✅</span><span>Full</span></button>
+                        <button class="btn-option" data-value="partial"><span>⚠️</span><span>Partial</span></button>
+                        <button class="btn-option"
+                            data-value="obstructed"><span>❌</span><span>Obstructed</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🦶 Foot</label>
+                    <div class="btn-group" data-field="foot">
+                        <button class="btn-option" data-value="left"><span>⬅️</span><span>Left</span></button>
+                        <button class="btn-option" data-value="right"><span>➡️</span><span>Right</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🏃 Run Speed</label>
+                    <div class="btn-group" data-field="run_speed">
+                        <button class="btn-option" data-value="slow"><span>🌙</span><span>Slow</span></button>
+                        <button class="btn-option" data-value="medium"><span>🚶</span><span>Medium</span></button>
+                        <button class="btn-option" data-value="fast"><span>🏃</span><span>Fast</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🎭 Fake</label>
+                    <div class="btn-group" data-field="fake">
+                        <button class="btn-option" data-value="no"><span>❌</span><span>No</span></button>
+                        <button class="btn-option" data-value="yes"><span>✅</span><span>Yes</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>⚽ Result</label>
+                    <div class="btn-group" data-field="in_out">
+                        <button class="btn-option" data-value="in"><span>🎯</span><span>In</span></button>
+                        <button class="btn-option" data-value="out"><span>📤</span><span>Out</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="savedGroup" style="display:none;">
+                    <label>🥅 Saved</label>
+                    <div class="btn-group" data-field="saved">
+                        <button class="btn-option" data-value="goal"><span>⚽</span><span>Goal</span></button>
+                        <button class="btn-option" data-value="saved"><span>🧤</span><span>Saved</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>🎯 Position</label>
+                    <div class="grid-selector">
+                        <button class="grid-cell" data-pos="7" data-side="left" data-height="high">
+                            <span class="arrow">↖️</span><span class="label">L-High</span>
+                        </button>
+                        <button class="grid-cell" data-pos="8" data-side="center" data-height="high">
+                            <span class="arrow">⬆️</span><span class="label">C-High</span>
+                        </button>
+                        <button class="grid-cell" data-pos="9" data-side="right" data-height="high">
+                            <span class="arrow">↗️</span><span class="label">R-High</span>
+                        </button>
+                        <button class="grid-cell" data-pos="4" data-side="left" data-height="mid">
+                            <span class="arrow">⬅️</span><span class="label">L-Mid</span>
+                        </button>
+                        <button class="grid-cell" data-pos="5" data-side="center" data-height="mid">
+                            <span class="arrow">🎯</span><span class="label">C-Mid</span>
+                        </button>
+                        <button class="grid-cell" data-pos="6" data-side="right" data-height="mid">
+                            <span class="arrow">➡️</span><span class="label">R-Mid</span>
+                        </button>
+                        <button class="grid-cell" data-pos="1" data-side="left" data-height="low">
+                            <span class="arrow">↙️</span><span class="label">L-Low</span>
+                        </button>
+                        <button class="grid-cell" data-pos="2" data-side="center" data-height="low">
+                            <span class="arrow">⬇️</span><span class="label">C-Low</span>
+                        </button>
+                        <button class="grid-cell" data-pos="3" data-side="right" data-height="low">
+                            <span class="arrow">↘️</span><span class="label">R-Low</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; margin-top: 15px;">
+                    <button class="btn btn-primary" onclick="saveAnnotation()" style="flex: 1;">✅ Save & Next</button>
+                    <button class="btn btn-secondary" onclick="skipVideo()">⏭️ Skip</button>
+                </div>
+                <button class="btn btn-warning" onclick="exportCSV()" style="width: 100%; margin-top: 8px;">💾 Export
+                    CSV</button>
+            </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

@@ -4,8 +4,6 @@ device: cuda
 save_best_only: true
 save_every_n_epochs: 10
 resume_from_checkpoint: null
-wandb_project: penalty_vision
-wandb_entity: null
 debug: false
 
 model:
@@ -15,6 +13,7 @@ model:
   num_layers: 2
   dropout: 0.3
   bidirectional: true
+  metadata_size: 16
 
 data:
   data_dir: "/path/to/embedded"

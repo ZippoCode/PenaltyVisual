@@ -4,14 +4,13 @@ from typing import Dict
 
 from penalty_vision.detection.kick_detector import KickDetector
 from penalty_vision.detection.object_detector import ObjectDetector
-from penalty_vision.detection.pose_detector import PoseDetector
-from penalty_vision.processor.video_processor import VideoProcessor
+from penalty_vision.processing.video_processor import VideoProcessor
 from penalty_vision.tracking.ball_tracker import BallTracker
 from penalty_vision.tracking.player_tracker import PlayerTracker
 from penalty_vision.utils import Config, logger
 
 
-class PenaltyKickPreprocessor:
+class PenaltyKickVideoAnalyzer:
     def __init__(self, config_path: str):
         self.config = Config.from_yaml(config_path)
 
@@ -21,11 +20,10 @@ class PenaltyKickPreprocessor:
         self.player_detector = ObjectDetector(config_path=config_path)
         self.player_tracker = PlayerTracker(self.player_detector)
         self.ball_tracker = BallTracker(self.player_detector)
-        self.pose_detector = PoseDetector()
 
         logger.info("PenaltyKickPreprocessor initialized")
 
-    def extract_embeddings_data(self, video_path: str) -> Dict:
+    def analyze_video(self, video_path: str) -> Dict:
         logger.info(f"Extracting embeddings data: {video_path}")
         video_name = os.path.basename(video_path).split('.')[0]
 
@@ -44,13 +42,3 @@ class PenaltyKickPreprocessor:
             "constrained_frames": constrained_frames,
             "temporal_segmentation": temporal_segmentation
         }
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.pose_detector.release()
-        return False
-
-    def release(self):
-        self.pose_detector.release()
