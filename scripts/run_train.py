@@ -7,11 +7,11 @@ from penalty_vision.config.training_config import get_training_config
 from penalty_vision.dataset.dataloaders import create_dataloaders
 from penalty_vision.models.losses import get_loss_function
 from penalty_vision.models.metrics import MetricsCalculator
-from penalty_vision.models.optimizer import get_optimizer
+from penalty_vision.models.optimizer import get_optimizer, get_scheduler
 from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
 from penalty_vision.training.trainer import Trainer
 from penalty_vision.utils.logger import logger
-
+from penalty_vision.utils.seed import set_seed
 
 def main():
     parser = argparse.ArgumentParser()
@@ -22,9 +22,7 @@ def main():
     device = torch.device(config.device)
     logger.info(f"Using device: {device}")
 
-    torch.manual_seed(config.seed)
-    if device.type == 'cuda':
-        torch.cuda.manual_seed(config.seed)
+    set_seed(config.seed)
 
     model = TwoStreamLSTM(
         input_size=config.model.input_size,
@@ -54,7 +52,14 @@ def main():
 
     optimizer = get_optimizer(
         model.parameters(),
-        config.training.learning_rate
+        lr=config.training.learning_rate,
+        weight_decay=config.training.weight_decay,
+    )
+
+    scheduler = get_scheduler(
+        optimizer=optimizer,
+        patience=config.training.scheduler_patience,
+        factor=config.training.scheduler_factor
     )
 
     metrics_calculator = MetricsCalculator(
@@ -66,9 +71,12 @@ def main():
         model=model,
         criterion=criterion,
         optimizer=optimizer,
+        scheduler=scheduler,
         metrics_calculator=metrics_calculator,
         device=device,
-        checkpoint_dir=str(config.checkpoint_dir)
+        checkpoint_dir=str(config.checkpoint_dir),
+        gradient_clip_val=config.training.gradient_clip_val,
+        mixed_precision=config.training.mixed_precision
     )
 
     logger.info("Starting training...")
@@ -76,12 +84,18 @@ def main():
     logger.info(f"Batch size: {config.data.batch_size}")
     logger.info(f"Number of epochs: {config.training.num_epochs}")
     logger.info(f"Learning rate: {config.training.learning_rate}")
+    logger.info(f"Optimizer: {config.training.optimizer}")
+    logger.info(f"Scheduler: {config.training.scheduler}")
+    logger.info(f"Gradient clipping: {config.training.gradient_clip_val}")
+    logger.info(f"Mixed precision: {config.training.mixed_precision}")
+    logger.info(f"Early stopping patience: {config.training.early_stopping_patience}")
     logger.info("-" * 50)
 
     best_accuracy = trainer.train(
         train_loader=train_loader,
         val_loader=val_loader,
-        num_epochs=config.training.num_epochs
+        num_epochs=config.training.num_epochs,
+        early_stopping_patience=config.training.early_stopping_patience
     )
 
     logger.info(f"\nTraining finished! Best validation accuracy: {best_accuracy:.4f}")

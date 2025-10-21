@@ -6,13 +6,17 @@ from penalty_vision.training.early_stopping import EarlyStopping
 
 
 class Trainer:
-    def __init__(self, model, criterion, optimizer, metrics_calculator, device, checkpoint_dir='checkpoints'):
+    def __init__(self, model, criterion, optimizer, scheduler, metrics_calculator, device, checkpoint_dir='checkpoints', gradient_clip_val=None, mixed_precision=False):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
+        self.scheduler = scheduler
         self.metrics_calculator = metrics_calculator
         self.device = device
         self.checkpoint_dir = checkpoint_dir
+        self.gradient_clip_val = gradient_clip_val
+        self.mixed_precision = mixed_precision
+        self.scaler = torch.cuda.amp.GradScaler() if mixed_precision else None
 
     def train_epoch(self, dataloader):
         self.model.train()
@@ -27,11 +31,28 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            outputs = self.model(running_embeds, kicking_embeds, metadata)
-            loss = self.criterion(outputs, labels)
+            if self.mixed_precision:
+                with torch.cuda.amp.autocast():
+                    outputs = self.model(running_embeds, kicking_embeds, metadata)
+                    loss = self.criterion(outputs, labels)
 
-            loss.backward()
-            self.optimizer.step()
+                self.scaler.scale(loss).backward()
+
+                if self.gradient_clip_val is not None:
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_val)
+
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+            else:
+                outputs = self.model(running_embeds, kicking_embeds, metadata)
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+
+                if self.gradient_clip_val is not None:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_val)
+
+                self.optimizer.step()
 
             total_loss += loss.item()
             self.metrics_calculator.update(outputs, labels)
@@ -48,7 +69,7 @@ class Trainer:
         self.metrics_calculator.reset()
 
         with torch.no_grad():
-            for (running_embeds, kicking_embeds, metadata), labels in tqdm(dataloader, desc='Training'):
+            for (running_embeds, kicking_embeds, metadata), labels in tqdm(dataloader, desc='Validation'):
                 running_embeds = running_embeds.to(self.device)
                 kicking_embeds = kicking_embeds.to(self.device)
                 metadata = metadata.to(self.device)
@@ -66,9 +87,9 @@ class Trainer:
 
         return metrics
 
-    def train(self, train_loader, val_loader, num_epochs):
+    def train(self, train_loader, val_loader, num_epochs, early_stopping_patience):
         best_val_accuracy = 0.0
-        early_stopping = EarlyStopping(patience=10, mode='max')
+        early_stopping = EarlyStopping(patience=early_stopping_patience, mode='max')
 
         for epoch in range(num_epochs):
             print(f"\nEpoch {epoch + 1}/{num_epochs}")
@@ -81,6 +102,15 @@ class Trainer:
             print(f"Val Loss: {val_metrics['loss']:.4f} | Accuracy: {val_metrics['accuracy']:.4f}")
 
             val_accuracy = val_metrics['accuracy']
+
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(val_metrics['loss'])
+                else:
+                    self.scheduler.step()
+
+            current_lr = self.optimizer.param_groups[0]['lr']
+            print(f"Learning Rate: {current_lr:.6f}")
 
             if val_accuracy > best_val_accuracy:
                 best_val_accuracy = val_accuracy
