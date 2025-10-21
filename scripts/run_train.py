@@ -2,7 +2,6 @@ import argparse
 from pathlib import Path
 
 import torch
-
 from penalty_vision.config.training_config import get_training_config
 from penalty_vision.dataset.dataloaders import create_dataloaders
 from penalty_vision.models.losses import get_loss_function
@@ -12,6 +11,8 @@ from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
 from penalty_vision.training.trainer import Trainer
 from penalty_vision.utils.logger import logger
 from penalty_vision.utils.seed import set_seed
+from penalty_vision.utils.wandb_logger import WandBLogger
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -24,6 +25,24 @@ def main():
 
     set_seed(config.seed)
 
+    wandb_logger = WandBLogger(
+        experiment_name=config.experiment_name,
+        config={
+            "learning_rate": config.training.learning_rate,
+            "batch_size": config.data.batch_size,
+            "num_epochs": config.training.num_epochs,
+            "optimizer": config.training.optimizer,
+            "scheduler": config.training.scheduler,
+            "hidden_size": config.model.hidden_size,
+            "num_layers": config.model.num_layers,
+            "dropout": config.model.dropout,
+            "gradient_clip_val": config.training.gradient_clip_val,
+            "mixed_precision": config.training.mixed_precision,
+            "early_stopping_patience": config.training.early_stopping_patience,
+            "seed": config.seed
+        }
+    )
+
     model = TwoStreamLSTM(
         input_size=config.model.input_size,
         hidden_size=config.model.hidden_size,
@@ -32,6 +51,8 @@ def main():
         metadata_size=config.model.metadata_size
     )
     model = model.to(device)
+
+    wandb_logger.watch_model(model)
 
     train_loader, val_loader, _ = create_dataloaders(
         data_dir=str(config.data.data_dir),
@@ -76,7 +97,8 @@ def main():
         device=device,
         checkpoint_dir=str(config.checkpoint_dir),
         gradient_clip_val=config.training.gradient_clip_val,
-        mixed_precision=config.training.mixed_precision
+        mixed_precision=config.training.mixed_precision,
+        wandb_logger=wandb_logger
     )
 
     logger.info("Starting training...")
@@ -99,6 +121,8 @@ def main():
     )
 
     logger.info(f"\nTraining finished! Best validation accuracy: {best_accuracy:.4f}")
+
+    wandb_logger.finish()
 
 
 if __name__ == '__main__':

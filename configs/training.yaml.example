@@ -4,8 +4,6 @@ device: cuda
 save_best_only: true
 save_every_n_epochs: 10
 resume_from_checkpoint: null
-wandb_project: penalty_vision
-wandb_entity: null
 debug: false
 
 model:

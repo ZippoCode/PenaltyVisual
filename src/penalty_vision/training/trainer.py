@@ -6,7 +6,19 @@ from penalty_vision.training.early_stopping import EarlyStopping
 
 
 class Trainer:
-    def __init__(self, model, criterion, optimizer, scheduler, metrics_calculator, device, checkpoint_dir='checkpoints', gradient_clip_val=None, mixed_precision=False):
+    def __init__(
+            self,
+            model,
+            criterion,
+            optimizer,
+            scheduler,
+            metrics_calculator,
+            device,
+            checkpoint_dir='checkpoints',
+            gradient_clip_val=None,
+            mixed_precision=False,
+            wandb_logger=None
+    ):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -17,6 +29,7 @@ class Trainer:
         self.gradient_clip_val = gradient_clip_val
         self.mixed_precision = mixed_precision
         self.scaler = torch.cuda.amp.GradScaler() if mixed_precision else None
+        self.wandb_logger = wandb_logger
 
     def train_epoch(self, dataloader):
         self.model.train()
@@ -112,10 +125,26 @@ class Trainer:
             current_lr = self.optimizer.param_groups[0]['lr']
             print(f"Learning Rate: {current_lr:.6f}")
 
+            if self.wandb_logger:
+                self.wandb_logger.log({
+                    "epoch": epoch + 1,
+                    "train/loss": train_metrics['loss'],
+                    "train/accuracy": train_metrics['accuracy'],
+                    "val/loss": val_metrics['loss'],
+                    "val/accuracy": val_metrics['accuracy'],
+                    "learning_rate": current_lr
+                })
+
             if val_accuracy > best_val_accuracy:
                 best_val_accuracy = val_accuracy
                 save_checkpoint(self.model, self.optimizer, epoch, val_metrics, self.checkpoint_dir, 'best_model.pth')
                 print(f"Best model saved with accuracy: {best_val_accuracy:.4f}")
+
+                if self.wandb_logger:
+                    self.wandb_logger.log_summary({
+                        "best_val_accuracy": best_val_accuracy,
+                        "best_epoch": epoch + 1
+                    })
 
             if early_stopping(val_accuracy):
                 print(f"Early stopping triggered at epoch {epoch + 1}")
