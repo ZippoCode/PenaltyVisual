@@ -27,7 +27,7 @@ class PenaltyKickDataset(Dataset):
         metadata = data['metadata'].item()
 
         return PenaltyKickSample(
-            running_frames=data['running_embeddings'],
-            kicking_frames=data['kicking_embeddings'],
+            running_embeddings=data['running_embeddings'],
+            kicking_embeddings=data['kicking_embeddings'],
             metadata=metadata
         ), self.labels[idx]

@@ -5,6 +5,6 @@ import numpy as np
 
 @dataclass
 class PenaltyKickSample:
-    running_frames: np.ndarray
-    kicking_frames: np.ndarray
+    running_embeddings: np.ndarray
+    kicking_embeddings: np.ndarray
     metadata: dict

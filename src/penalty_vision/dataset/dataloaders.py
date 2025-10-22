@@ -14,7 +14,7 @@ def collate_fn(batch):
     valid_batch = []
 
     for sample, label in batch:
-        if sample.running_frames.size > 0 and sample.kicking_frames.size > 0:
+        if sample.running_embeddings.size > 0 and sample.kicking_embeddings.size > 0:
             valid_batch.append((sample, label))
 
     if len(valid_batch) == 0:
@@ -22,8 +22,8 @@ def collate_fn(batch):
 
     samples, labels = zip(*valid_batch)
 
-    running_embeddings = torch.stack([torch.from_numpy(s.running_frames) for s in samples])
-    kicking_embeddings = torch.stack([torch.from_numpy(s.kicking_frames) for s in samples])
+    running_embeddings = torch.stack([torch.from_numpy(s.running_embeddings) for s in samples])
+    kicking_embeddings = torch.stack([torch.from_numpy(s.kicking_embeddings) for s in samples])
     metadata = torch.stack([torch.from_numpy(encode_metadata(s.metadata)) for s in samples])
     labels = torch.tensor(labels, dtype=torch.long)
 
