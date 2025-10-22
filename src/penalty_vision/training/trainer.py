@@ -6,8 +6,19 @@ from tqdm import tqdm
 
 
 class Trainer:
-    def __init__(self, model, criterion, optimizer, scheduler, metrics_calculator: MetricsCalculator, device,
-                 checkpoint_dir='checkpoints', gradient_clip_val=None, mixed_precision=False, wandb_logger=None):
+    def __init__(
+            self,
+            model,
+            criterion,
+            optimizer,
+            scheduler,
+            metrics_calculator: MetricsCalculator,
+            device,
+            checkpoint_dir='checkpoints',
+            gradient_clip_val=None,
+            mixed_precision=False,
+            wandb_logger=None
+    ):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer

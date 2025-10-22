@@ -1,4 +1,4 @@
-from typing import Optional, Dict
+from typing import Dict, List
 
 import torch
 from torchmetrics import Accuracy, Precision, Recall, F1Score, ConfusionMatrix
@@ -7,19 +7,10 @@ from torchmetrics import MetricCollection
 
 class MetricsCalculator:
 
-    def __init__(self, num_classes: int, device: torch.device = None, class_names: Optional[list] = None):
+    def __init__(self, num_classes: int, class_names: List[str], device: torch.device = None):
         self.num_classes = num_classes
         self.device = device
-
-        if class_names is None:
-            if num_classes == 2:
-                self.class_names = ['left', 'right']
-            elif num_classes == 3:
-                self.class_names = ['left', 'center', 'right']
-            else:
-                self.class_names = [f'class_{i}' for i in range(num_classes)]
-        else:
-            self.class_names = class_names
+        self.class_names = class_names
 
         task = 'binary' if num_classes == 2 else 'multiclass'
 

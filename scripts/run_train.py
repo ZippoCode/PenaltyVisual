@@ -1,25 +1,19 @@
+from penalty_vision.utils.wandb_logger import WandBLogger
+from penalty_vision.utils.seed import set_seed
+from penalty_vision.utils.logger import logger
+from penalty_vision.training.trainer import Trainer
+from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
+from penalty_vision.models.optimizer import get_optimizer, get_scheduler
+from penalty_vision.models.metrics import MetricsCalculator
+from penalty_vision.models.losses import get_loss_function
+from penalty_vision.dataset.dataloaders import create_dataloaders
+from penalty_vision.config.training_config import get_training_config
+import torch
+from pathlib import Path
+import argparse
 import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._generate_schema")
-
-import argparse
-from pathlib import Path
-
-import torch
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from penalty_vision.config.training_config import get_training_config
-from penalty_vision.dataset.dataloaders import create_dataloaders
-from penalty_vision.models.losses import get_loss_function
-from penalty_vision.models.metrics import MetricsCalculator
-from penalty_vision.models.optimizer import get_optimizer, get_scheduler
-from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
-from penalty_vision.training.trainer import Trainer
-from penalty_vision.utils.logger import logger
-from penalty_vision.utils.seed import set_seed
-from penalty_vision.utils.wandb_logger import WandBLogger
 
 
 def main():
@@ -101,6 +95,7 @@ def main():
 
     metrics_calculator = MetricsCalculator(
         num_classes=config.model.num_classes,
+        class_names=dataset_info['label_names'],
         device=device
     )
 
