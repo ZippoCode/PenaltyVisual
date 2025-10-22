@@ -1,24 +1,13 @@
 import torch
-from tqdm import tqdm
-
+from penalty_vision.models.metrics import MetricsCalculator
 from penalty_vision.training.checkpoints import save_checkpoint
 from penalty_vision.training.early_stopping import EarlyStopping
+from tqdm import tqdm
 
 
 class Trainer:
-    def __init__(
-            self,
-            model,
-            criterion,
-            optimizer,
-            scheduler,
-            metrics_calculator,
-            device,
-            checkpoint_dir='checkpoints',
-            gradient_clip_val=None,
-            mixed_precision=False,
-            wandb_logger=None
-    ):
+    def __init__(self, model, criterion, optimizer, scheduler, metrics_calculator: MetricsCalculator, device,
+                 checkpoint_dir='checkpoints', gradient_clip_val=None, mixed_precision=False, wandb_logger=None):
         self.model = model
         self.criterion = criterion
         self.optimizer = optimizer
@@ -31,7 +20,7 @@ class Trainer:
         self.scaler = torch.cuda.amp.GradScaler() if mixed_precision else None
         self.wandb_logger = wandb_logger
 
-    def train_epoch(self, dataloader):
+    def train_epoch(self, dataloader, epoch=None):
         self.model.train()
         total_loss = 0.0
         self.metrics_calculator.reset()
@@ -74,9 +63,13 @@ class Trainer:
         metrics = self.metrics_calculator.compute()
         metrics['loss'] = avg_loss
 
+        if self.wandb_logger:
+            extra_metrics = {'epoch': epoch} if epoch is not None else {}
+            self.metrics_calculator.log_to_wandb(self.wandb_logger, metrics, 'train', extra_metrics)
+
         return metrics
 
-    def validate_epoch(self, dataloader):
+    def validate_epoch(self, dataloader, learning_rate=None):
         self.model.eval()
         total_loss = 0.0
         self.metrics_calculator.reset()
@@ -98,6 +91,10 @@ class Trainer:
         metrics = self.metrics_calculator.compute()
         metrics['loss'] = avg_loss
 
+        if self.wandb_logger:
+            extra_metrics = {'learning_rate': learning_rate} if learning_rate is not None else {}
+            self.metrics_calculator.log_to_wandb(self.wandb_logger, metrics, 'val', extra_metrics)
+
         return metrics
 
     def train(self, train_loader, val_loader, num_epochs, early_stopping_patience):
@@ -108,32 +105,26 @@ class Trainer:
             print(f"\nEpoch {epoch + 1}/{num_epochs}")
             print("-" * 50)
 
-            train_metrics = self.train_epoch(train_loader)
+            train_metrics = self.train_epoch(train_loader, epoch=epoch + 1)
             print(f"Train Loss: {train_metrics['loss']:.4f} | Accuracy: {train_metrics['accuracy']:.4f}")
-
-            val_metrics = self.validate_epoch(val_loader)
-            print(f"Val Loss: {val_metrics['loss']:.4f} | Accuracy: {val_metrics['accuracy']:.4f}")
-
-            val_accuracy = val_metrics['accuracy']
 
             if self.scheduler is not None:
                 if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    current_lr = self.optimizer.param_groups[0]['lr']
+                    val_metrics = self.validate_epoch(val_loader, learning_rate=current_lr)
                     self.scheduler.step(val_metrics['loss'])
                 else:
                     self.scheduler.step()
+                    current_lr = self.optimizer.param_groups[0]['lr']
+                    val_metrics = self.validate_epoch(val_loader, learning_rate=current_lr)
+            else:
+                current_lr = self.optimizer.param_groups[0]['lr']
+                val_metrics = self.validate_epoch(val_loader, learning_rate=current_lr)
 
-            current_lr = self.optimizer.param_groups[0]['lr']
+            print(f"Val Loss: {val_metrics['loss']:.4f} | Accuracy: {val_metrics['accuracy']:.4f}")
             print(f"Learning Rate: {current_lr:.6f}")
 
-            if self.wandb_logger:
-                self.wandb_logger.log({
-                    "epoch": epoch + 1,
-                    "train/loss": train_metrics['loss'],
-                    "train/accuracy": train_metrics['accuracy'],
-                    "val/loss": val_metrics['loss'],
-                    "val/accuracy": val_metrics['accuracy'],
-                    "learning_rate": current_lr
-                })
+            val_accuracy = val_metrics['accuracy']
 
             if val_accuracy > best_val_accuracy:
                 best_val_accuracy = val_accuracy

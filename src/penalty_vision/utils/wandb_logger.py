@@ -16,7 +16,6 @@ class WandBLogger:
 
         self.project = os.getenv('WANDB_PROJECT')
         self.entity = os.getenv('WANDB_ENTITY')
-        print(self.project, self.entity)
         self.enabled = self.project is not None and self.entity is not None
 
         if self.enabled:
