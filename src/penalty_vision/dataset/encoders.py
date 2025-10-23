@@ -1,4 +1,25 @@
+from pathlib import Path
+from typing import List
+
 import numpy as np
+
+
+def encode_side_labels(npz_files: List[Path]):
+    label_to_int = {'center': 0, 'left': 1, 'right': 2}
+    labels = []
+    for npz_file in npz_files:
+        data = np.load(npz_file, allow_pickle=True)
+        metadata = data['metadata'].item()
+        label = metadata['side']
+
+        if label not in label_to_int:
+            raise ValueError(f"Label '{label}' not valid. Use: {list(label_to_int.keys())}")
+
+        labels.append(label)
+
+    encoded_labels = np.array([label_to_int[label] for label in labels])
+
+    return encoded_labels, label_to_int
 
 
 def encode_foot_feature(value: str) -> np.ndarray:

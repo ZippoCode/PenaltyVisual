@@ -1,17 +1,18 @@
-from penalty_vision.utils.wandb_logger import WandBLogger
-from penalty_vision.utils.seed import set_seed
-from penalty_vision.utils.logger import logger
-from penalty_vision.training.trainer import Trainer
-from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
-from penalty_vision.models.optimizer import get_optimizer, get_scheduler
-from penalty_vision.models.metrics import MetricsCalculator
-from penalty_vision.models.losses import get_loss_function
-from penalty_vision.dataset.dataloaders import create_dataloaders
-from penalty_vision.config.training_config import get_training_config
-import torch
-from pathlib import Path
 import argparse
 import warnings
+from pathlib import Path
+
+import torch
+from penalty_vision.config.training_config import get_training_config
+from penalty_vision.dataset.dataloaders import create_dataloaders
+from penalty_vision.models.losses import get_loss_function
+from penalty_vision.models.metrics import MetricsCalculator
+from penalty_vision.models.optimizer import get_optimizer, get_scheduler
+from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
+from penalty_vision.training.trainer import Trainer
+from penalty_vision.utils.logger import logger
+from penalty_vision.utils.seed import set_seed
+from penalty_vision.utils.wandb_logger import WandBLogger
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic._internal._generate_schema")
 
@@ -29,7 +30,6 @@ def main():
 
     train_loader, val_loader, test_loader, dataset_info = create_dataloaders(
         data_dir=str(config.data.data_dir),
-        label_field=config.data.label_field,
         batch_size=config.data.batch_size,
         train_size=config.data.train_split,
         val_size=config.data.val_split,
@@ -115,8 +115,7 @@ def main():
     logger.info("Starting training...")
     logger.info(f"Experiment: {config.experiment_name}")
     logger.info(
-        f"Dataset: {dataset_info['total_samples']} samples ({dataset_info['train_samples']} train, \
-        {dataset_info['val_samples']} val, {dataset_info['test_samples']} test)")
+        f"Dataset: {dataset_info['total_samples']} samples ({dataset_info['train_samples']} train, {dataset_info['val_samples']} val, {dataset_info['test_samples']} test)")
     logger.info(f"Classes: {dataset_info['num_classes']} - {dataset_info['label_names']}")
     logger.info(f"Label distribution: {dataset_info['label_distribution']}")
     logger.info(f"Batch size: {config.data.batch_size}")
@@ -137,6 +136,40 @@ def main():
     )
 
     logger.info(f"\nTraining finished! Best validation accuracy: {best_accuracy:.4f}")
+
+    logger.info("\n" + "=" * 50)
+    logger.info("Evaluating on test set...")
+    logger.info("=" * 50)
+
+    checkpoint_path = Path(config.checkpoint_dir) / "best_model.pth"
+    if checkpoint_path.exists():
+        logger.info(f"Loading best model from {checkpoint_path}")
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        model.load_state_dict(checkpoint['model_state_dict'])
+    else:
+        logger.warning("Best checkpoint not found, using current model state")
+
+    test_metrics = trainer.evaluate(test_loader, phase='test')
+
+    logger.info("\n" + "=" * 50)
+    logger.info("FINAL TEST RESULTS")
+    logger.info("=" * 50)
+    logger.info(f"Test Accuracy: {test_metrics['accuracy']:.4f}")
+    logger.info(f"Test Precision (macro): {test_metrics['precision_macro']:.4f}")
+    logger.info(f"Test Precision (weighted): {test_metrics['precision_weighted']:.4f}")
+    logger.info(f"Test Recall (macro): {test_metrics['recall_macro']:.4f}")
+    logger.info(f"Test Recall (weighted): {test_metrics['recall_weighted']:.4f}")
+    logger.info(f"Test F1 (macro): {test_metrics['f1_macro']:.4f}")
+    logger.info(f"Test F1 (weighted): {test_metrics['f1_weighted']:.4f}")
+    logger.info("=" * 50)
+
+    if wandb_logger:
+        wandb_logger.log_summary({
+            "final_test_accuracy": test_metrics['accuracy'],
+            "final_test_precision_macro": test_metrics['precision_macro'],
+            "final_test_recall_macro": test_metrics['recall_macro'],
+            "final_test_f1_macro": test_metrics['f1_macro']
+        })
 
     wandb_logger.finish()
 

@@ -24,6 +24,7 @@ data:
   train_split: 0.7
   val_split: 0.15
   test_split: 0.15
+  n_folds: 10
 
 training:
   num_epochs: 100

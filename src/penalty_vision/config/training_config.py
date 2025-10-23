@@ -26,7 +26,7 @@ class DataConfig:
     train_split: float = 0.7
     val_split: float = 0.15
     test_split: float = 0.15
-
+    n_folds: int = 10
 
 @dataclass
 class TrainingConfig:
