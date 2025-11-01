@@ -8,7 +8,7 @@ from penalty_vision.dataset.dataloaders import create_dataloaders
 from penalty_vision.models.losses import get_loss_function
 from penalty_vision.models.metrics import MetricsCalculator
 from penalty_vision.models.optimizer import get_optimizer, get_scheduler
-from penalty_vision.models.two_stream_lstm import TwoStreamLSTM
+from penalty_vision.models.two_stream_lstm import PenaltyKickClassifier
 from penalty_vision.training.trainer import Trainer
 from penalty_vision.utils.logger import logger
 from penalty_vision.utils.seed import set_seed
@@ -63,8 +63,8 @@ def main():
         }
     )
 
-    model = TwoStreamLSTM(
-        input_size=config.model.input_size,
+    model = PenaltyKickClassifier(
+        embedding_size=config.model.input_size,
         hidden_size=config.model.hidden_size,
         num_classes=config.model.num_classes,
         dropout=config.model.dropout,

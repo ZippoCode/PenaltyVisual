@@ -1,7 +1,7 @@
-imageio-ffmpeg>=0.6.0
-python-dotenv>=1.1.1
-PyYAML>=6.0.3
-seaborn>+0.13.2
-roboflow>=1.2.10
-yt-dlp[default]>=2025.9.26
-wandb>=0.22.2
+imageio-ffmpeg==0.6.0
+python-dotenv==1.1.1
+PyYAML==6.0.3
+seaborn==0.13.2
+roboflow==1.2.10
+yt-dlp[default]==2025.9.26
+wandb==0.22.3
